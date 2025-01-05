@@ -44,3 +44,10 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db 
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celerybeat-schedule.*
+*.pid
+celery.db 
