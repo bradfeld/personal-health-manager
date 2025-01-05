@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load core_extras %}
+
+{% block title %}Health Metrics - Health Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3>Health Metrics</h3>
+                    <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Whoop Data</a>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Trends -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>{{ trends.avg_hrv|default:"--"|floatformat:1 }}</h4>
+                            <p class="text-muted">Average HRV</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>{{ trends.avg_recovery|default:"--"|floatformat:1 }}%</h4>
+                            <p class="text-muted">Average Recovery</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>{{ trends.avg_rhr|default:"--"|floatformat:1 }}</h4>
+                            <p class="text-muted">Average Resting Heart Rate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>HRV</th>
+                                <th>Recovery Score</th>
+                                <th>Resting Heart Rate</th>
+                                <th>Sleep Duration</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for metric in metrics %}
+                            <tr>
+                                <td>{{ metric.date|date:"M d, Y" }}</td>
+                                <td>{{ metric.hrv|default:"--" }}</td>
+                                <td>{{ metric.recovery_score|default:"--" }}%</td>
+                                <td>{{ metric.resting_heart_rate|default:"--" }}</td>
+                                <td>{{ metric.sleep_duration|duration }}</td>
+                                <td>{{ metric.source|title }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Previous</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

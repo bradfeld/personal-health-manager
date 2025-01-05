@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ activity.activity_type }} - Health Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>{{ activity.activity_type }}</h2>
+                <p class="text-muted">{{ activity.date|date:"F j, Y, g:i a" }}</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Duration</h4>
+                        <p>{{ activity.duration }}</p>
+                    </div>
+                    {% if activity.distance %}
+                    <div class="col-md-6">
+                        <h4>Distance</h4>
+                        <p>{{ activity.distance|floatformat:2 }} {% if user.usersettings.distance_unit == 'km' %}km{% else %}mi{% endif %}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if activity.calories %}
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h4>Calories Burned</h4>
+                        <p>{{ activity.calories }} kcal</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h4>Source</h4>
+                        <p>{{ activity.source|title }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
