@@ -3,6 +3,9 @@ from datetime import datetime, timezone, timedelta
 from ..models import UserIntegration
 from core.models import Activity
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class StravaService:
     BASE_URL = 'https://www.strava.com/api/v3'
@@ -13,6 +16,7 @@ class StravaService:
     
     def refresh_token_if_needed(self):
         if self.integration.token_expires_at <= datetime.now(timezone.utc):
+            logger.info("Strava token needs refresh")
             response = requests.post(
                 'https://www.strava.com/oauth/token',
                 data={
@@ -24,16 +28,24 @@ class StravaService:
             )
             
             if response.status_code != 200:
-                raise Exception('Failed to refresh Strava token')
+                error_msg = f"Failed to refresh Strava token. Status: {response.status_code}, Response: {response.text}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
             
-            data = response.json()
-            self.integration.access_token = data['access_token']
-            self.integration.refresh_token = data['refresh_token']
-            self.integration.token_expires_at = datetime.fromtimestamp(
-                data['expires_at'],
-                tz=timezone.utc
-            )
-            self.integration.save()
+            try:
+                data = response.json()
+                self.integration.access_token = data['access_token']
+                self.integration.refresh_token = data['refresh_token']
+                self.integration.token_expires_at = datetime.fromtimestamp(
+                    data['expires_at'],
+                    tz=timezone.utc
+                )
+                self.integration.save()
+                logger.info("Successfully refreshed Strava token")
+            except (KeyError, ValueError) as e:
+                error_msg = f"Invalid response format from Strava: {str(e)}, Response: {response.text}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
     
     def sync_activities(self):
         self.refresh_token_if_needed()

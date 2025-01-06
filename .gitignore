@@ -23,6 +23,10 @@ wheels/
 .installed.cfg
 *.egg
 
+# Celery
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 # Django
 *.log
 local_settings.py

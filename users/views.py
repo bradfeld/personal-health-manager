@@ -4,6 +4,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from .models import UserSettings
 from integrations.models import UserIntegration
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .forms import UserPreferencesForm
 
 class UserSettingsView(LoginRequiredMixin, UpdateView):
     model = UserSettings
@@ -34,3 +37,33 @@ class RegisterView(CreateView):
     form_class = UserCreationForm
     template_name = 'registration/register.html'
     success_url = reverse_lazy('login') 
+
+@login_required
+def settings(request):
+    # Get or create user settings
+    user_settings, created = UserSettings.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        form = UserPreferencesForm(request.POST, instance=user_settings)
+        if form.is_valid():
+            form.save()
+            return redirect('settings')
+    else:
+        form = UserPreferencesForm(instance=user_settings)
+    
+    # Check integration status
+    strava_connected = UserIntegration.objects.filter(
+        user=request.user, 
+        provider='strava'
+    ).exists()
+    
+    whoop_connected = UserIntegration.objects.filter(
+        user=request.user, 
+        provider='whoop'
+    ).exists()
+    
+    return render(request, 'settings.html', {
+        'form': form,
+        'strava_connected': strava_connected,
+        'whoop_connected': whoop_connected,
+    }) 

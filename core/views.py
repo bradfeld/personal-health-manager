@@ -73,7 +73,7 @@ class ActivityListView(LoginRequiredMixin, ListView):
             user=self.request.user
         ).annotate(
             month=TruncMonth('date')
-        ).order_by('-month')
+        ).order_by('-date')
 
         # Group activities and calculate stats by month
         months = {}
@@ -92,6 +92,8 @@ class ActivityListView(LoginRequiredMixin, ListView):
                 }
             
             months[month_key]['activities'].append(activity)
+            
+            # Update month stats
             months[month_key]['stats']['total_activities'] += 1
             months[month_key]['stats']['total_distance'] += activity.distance or 0
             months[month_key]['stats']['total_duration'] += activity.duration
@@ -104,7 +106,11 @@ class ActivityListView(LoginRequiredMixin, ListView):
             else:
                 months[month_key]['stats']['activity_types'][activity_type] += 1
 
-        return list(months.items())
+        # For each month, sort activities by exact datetime
+        for month_data in months.values():
+            month_data['activities'].sort(key=lambda x: x.date, reverse=True)
+
+        return sorted(months.items(), key=lambda x: x[0], reverse=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
