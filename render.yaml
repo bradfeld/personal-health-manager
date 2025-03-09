@@ -36,5 +36,5 @@ databases:
   - name: personal-health-db
     databaseName: personal_health
     user: personal_health_user
-    plan: free
+    plan: basic-256
     region: oregon 
