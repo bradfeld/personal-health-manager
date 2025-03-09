@@ -12,7 +12,7 @@ ROOT_URLCONF = 'health_manager.urls'
 # Use environment variables for sensitive data
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'ba2f-76-159-151-41.ngrok-free.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -40,9 +40,25 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-SOCIAL_AUTH_STRAVA_KEY = os.getenv('STRAVA_CLIENT_ID')
-SOCIAL_AUTH_STRAVA_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
-SOCIAL_AUTH_STRAVA_SCOPE = ['read,activity:read_all'] 
+# Strava OAuth settings
+SOCIAL_AUTH_STRAVA_KEY = os.environ.get('STRAVA_CLIENT_ID')
+SOCIAL_AUTH_STRAVA_SECRET = os.environ.get('STRAVA_CLIENT_SECRET')
+SOCIAL_AUTH_STRAVA_SCOPE = ['read', 'activity:read_all']
+SOCIAL_AUTH_STRAVA_AUTH_EXTRA_ARGUMENTS = {
+    'approval_prompt': 'force',
+    'response_type': 'code',
+}
+SOCIAL_AUTH_STRAVA_EXTRA_DATA = [
+    ('refresh_token', 'refresh_token'),
+    ('expires_in', 'expires_in'),
+    ('token_type', 'token_type'),
+]
+
+# Social Auth general settings
+SOCIAL_AUTH_RAISE_EXCEPTIONS = True
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/settings/'
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False  # Set to True in production
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
 # Time zone setting (add this before Celery config)
 TIME_ZONE = 'UTC'  # or your preferred timezone like 'America/New_York'
@@ -68,20 +84,14 @@ CELERY_BEAT_SCHEDULE = {
 # Whoop settings
 SOCIAL_AUTH_WHOOP_KEY = os.getenv('WHOOP_CLIENT_ID')
 SOCIAL_AUTH_WHOOP_SECRET = os.getenv('WHOOP_CLIENT_SECRET')
-SOCIAL_AUTH_WHOOP_SCOPE = 'offline read:recovery read:sleep read:workout'
+SOCIAL_AUTH_WHOOP_SCOPE = ['offline', 'read:profile', 'read:workout', 'read:sleep', 'read:recovery', 'read:body_measurement']
 SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop/'
-SOCIAL_AUTH_WHOOP_STATE_PARAMETER = True
-SOCIAL_AUTH_WHOOP_PROTOCOL = 'https'
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
     'response_type': 'code',
-    'grant_type': 'authorization_code'
 }
 
-# For development, also allow the ngrok URL
-SOCIAL_AUTH_WHOOP_ALLOWED_REDIRECT_URIS = [
-    'http://127.0.0.1:8000/complete/whoop/',
-    'https://ba2f-76-159-151-41.ngrok-free.app/complete/whoop/'
-]
+# For development, allow both localhost and ngrok URLs
+SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'c251-76-159-151-41.ngrok-free.app']
 
 # Logging configuration
 LOGGING = {
@@ -122,6 +132,16 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'social_django': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
@@ -133,12 +153,12 @@ STATICFILES_DIRS = [
 ] 
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = 'metrics'
 LOGOUT_REDIRECT_URL = 'login'
 LOGOUT_URL = 'logout'
 
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'settings'
-SOCIAL_AUTH_LOGIN_ERROR_URL = 'settings' 
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'metrics'
+SOCIAL_AUTH_LOGIN_ERROR_URL = 'settings'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 
 
@@ -192,17 +212,9 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
-    'integrations.pipeline.save_strava_token',  # Strava pipeline
-    'integrations.pipeline.save_whoop_token',   # Whoop pipeline
+    'integrations.pipelines.save_strava_token',
+    'integrations.pipelines.save_whoop_token',
 )
 
-# Add these settings for Strava
-SOCIAL_AUTH_STRAVA_AUTH_EXTRA_ARGUMENTS = {'approval_prompt': 'force'}
-SOCIAL_AUTH_STRAVA_EXTRA_DATA = [
-    ('refresh_token', 'refresh_token'),
-    ('expires_in', 'expires_in'),
-    ('token_type', 'token_type'),
-] 
-
 # Add this with your other Whoop settings
-WHOOP_WEBHOOK_URL = 'https://ba2f-76-159-151-41.ngrok-free.app/webhooks/whoop/' 
+WHOOP_WEBHOOK_URL = 'https://c251-76-159-151-41.ngrok-free.app/webhooks/whoop/' 

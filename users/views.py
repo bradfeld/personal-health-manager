@@ -12,7 +12,7 @@ class UserSettingsView(LoginRequiredMixin, UpdateView):
     model = UserSettings
     fields = ['sync_frequency', 'email_notifications', 'distance_unit']
     template_name = 'users/settings.html'
-    success_url = reverse_lazy('dashboard')
+    success_url = reverse_lazy('metrics')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

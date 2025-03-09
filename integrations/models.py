@@ -8,6 +8,7 @@ class UserIntegration(models.Model):
     refresh_token = models.CharField(max_length=255)
     token_expires_at = models.DateTimeField()
     last_sync = models.DateTimeField(null=True, blank=True)
+    external_id = models.CharField(max_length=100, null=True, blank=True)  # For storing provider-specific user IDs
 
     class Meta:
         unique_together = ('user', 'provider') 

@@ -15,7 +15,7 @@
                 <a href="{% url 'social:disconnect' 'strava' %}" class="btn btn-danger">Disconnect</a>
             {% else %}
                 <p>Not connected to Strava</p>
-                <a href="{% url 'social:begin' 'strava' %}" class="btn btn-primary">Connect with Strava</a>
+                <a href="{% url 'connect_strava' %}" class="btn btn-primary">Connect with Strava</a>
             {% endif %}
         </div>
     </div>
@@ -31,7 +31,7 @@
                 <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-danger">Disconnect</a>
             {% else %}
                 <p>Not connected to Whoop</p>
-                <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect with Whoop</a>
+                <a href="{% url 'connect_whoop' %}" class="btn btn-primary">Connect with Whoop</a>
             {% endif %}
         </div>
     </div>

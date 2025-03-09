@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load core_extras %}
 
-{% block title %}Activities - Health Manager{% endblock %}
+{% block title %}Strava - Health Manager{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -11,35 +11,29 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h3>{{ month|date:"F Y" }}</h3>
-                    <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync Activities</a>
+                    <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync Strava</a>
                 </div>
             </div>
             
             <div class="card-body">
                 <!-- Monthly Statistics -->
                 <div class="row mb-4">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="text-center">
                             <h4>{{ data.stats.total_activities }}</h4>
                             <p class="text-muted">Activities</p>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="text-center">
                             <h4>{{ data.stats.total_distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}</h4>
                             <p class="text-muted">Total Distance</p>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="text-center">
                             <h4>{{ data.stats.total_duration|duration }}</h4>
                             <p class="text-muted">Total Duration</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h4>{{ data.stats.total_calories|default:0 }}</h4>
-                            <p class="text-muted">Total Calories</p>
                         </div>
                     </div>
                 </div>
@@ -65,7 +59,6 @@
                                 <th>Type</th>
                                 <th>Duration</th>
                                 <th>Distance</th>
-                                <th>Calories</th>
                                 <th>Source</th>
                             </tr>
                         </thead>
@@ -76,7 +69,6 @@
                                 <td>{{ activity.activity_type }}</td>
                                 <td>{{ activity.duration|duration }}</td>
                                 <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
-                                <td>{% if activity.calories %}{{ activity.calories }}{% endif %}</td>
                                 <td>{{ activity.source|title }}</td>
                             </tr>
                             {% endfor %}
