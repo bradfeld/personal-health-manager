@@ -103,40 +103,55 @@ class MetricsListView(LoginRequiredMixin, ListView):
                 months[month_key] = {
                     'metrics': [],
                     'stats': {
+                        'avg_rhr': 0,
                         'avg_hrv': 0,
                         'avg_recovery': 0,
-                        'avg_rhr': 0,
-                        'count': 0
+                        'total_sleep': timedelta(),
                     }
                 }
             
             months[month_key]['metrics'].append(metric)
-            
-            # Update month stats (only count metrics with values)
-            if metric.hrv is not None:
-                months[month_key]['stats']['avg_hrv'] += metric.hrv
-                months[month_key]['stats']['count'] += 1
-            if metric.recovery_score is not None:
-                months[month_key]['stats']['avg_recovery'] += metric.recovery_score
-            if metric.resting_heart_rate is not None:
-                months[month_key]['stats']['avg_rhr'] += metric.resting_heart_rate
         
-        # Calculate averages for each month
-        for month_data in months.values():
-            count = month_data['stats']['count']
-            if count > 0:
-                month_data['stats']['avg_hrv'] = month_data['stats']['avg_hrv'] / count
-                month_data['stats']['avg_recovery'] = month_data['stats']['avg_recovery'] / count
-                month_data['stats']['avg_rhr'] = month_data['stats']['avg_rhr'] / count
+        # Calculate stats for each month
+        for month_key, month_data in months.items():
+            metrics_list = month_data['metrics']
             
-            # Sort metrics by date
-            month_data['metrics'].sort(key=lambda x: x.date, reverse=True)
+            # Calculate averages
+            rhr_values = [m.resting_heart_rate for m in metrics_list if m.resting_heart_rate is not None]
+            hrv_values = [m.hrv for m in metrics_list if m.hrv is not None]
+            recovery_values = [m.recovery_score for m in metrics_list if m.recovery_score is not None]
+            
+            month_data['stats']['avg_rhr'] = sum(rhr_values) / len(rhr_values) if rhr_values else 0
+            month_data['stats']['avg_hrv'] = sum(hrv_values) / len(hrv_values) if hrv_values else 0
+            month_data['stats']['avg_recovery'] = sum(recovery_values) / len(recovery_values) if recovery_values else 0
+            
+            # Calculate total sleep
+            month_data['stats']['total_sleep'] = sum(
+                (m.sleep_duration for m in metrics_list if m.sleep_duration is not None),
+                timedelta()
+            )
         
-        return sorted(months.items(), key=lambda x: x[0], reverse=True)
-
+        return months
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        return context 
+        
+        # Check if user has UserSettings, create if not
+        from users.models import UserSettings
+        user_settings, created = UserSettings.objects.get_or_create(user=self.request.user)
+        
+        # Add distance unit to context
+        context['distance_unit'] = user_settings.distance_unit
+        context['conversion_factor'] = 0.621371 if user_settings.distance_unit == 'mi' else 1
+        
+        # Check if user has Whoop integration
+        from integrations.models import UserIntegration
+        context['whoop_connected'] = UserIntegration.objects.filter(
+            user=self.request.user,
+            provider='whoop'
+        ).exists()
+        
+        return context
 
 class PrivacyPolicyView(TemplateView):
     template_name = 'core/privacy_policy.html' 

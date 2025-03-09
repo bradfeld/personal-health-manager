@@ -6,89 +6,113 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        {% for month, data in months %}
+        {% if not whoop_connected %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Connect Whoop</h3>
+            </div>
+            <div class="card-body text-center">
+                <p>Connect your Whoop account to see your health metrics.</p>
+                <a href="{% url 'connect_whoop' %}" class="btn btn-primary">Connect with Whoop</a>
+            </div>
+        </div>
+        {% elif months %}
+            {% for month, data in months.items %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3>{{ month|date:"F Y" }}</h3>
+                        <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Whoop</a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Monthly Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.avg_hrv|floatformat:0 }}</h4>
+                                <p class="text-muted">Average HRV</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.avg_recovery|floatformat:0 }}%</h4>
+                                <p class="text-muted">Average Recovery</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.avg_rhr|floatformat:0 }}</h4>
+                                <p class="text-muted">Average RHR</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>HRV</th>
+                                    <th>Recovery Score</th>
+                                    <th>Resting Heart Rate</th>
+                                    <th>Sleep Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for metric in data.metrics %}
+                                <tr>
+                                    <td>{{ metric.date|date:"M d, Y" }}</td>
+                                    <td>{{ metric.hrv|default:"--"|floatformat:0 }}</td>
+                                    <td>{{ metric.recovery_score|default:"--"|floatformat:0 }}%</td>
+                                    <td>{{ metric.resting_heart_rate|default:"--"|floatformat:0 }}</td>
+                                    <td>{{ metric.sleep_duration|duration }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted">No Whoop data found.</p>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if is_paginated %}
+            <nav aria-label="Month navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Next Month</a>
+                        </li>
+                    {% endif %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Previous Month &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
         <div class="card mb-4">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3>{{ month|date:"F Y" }}</h3>
+                    <h3>No Whoop Data</h3>
                     <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Whoop</a>
                 </div>
             </div>
-            
-            <div class="card-body">
-                <!-- Monthly Statistics -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.avg_hrv|floatformat:0 }}</h4>
-                            <p class="text-muted">Average HRV</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.avg_recovery|floatformat:0 }}%</h4>
-                            <p class="text-muted">Average Recovery</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.avg_rhr|floatformat:0 }}</h4>
-                            <p class="text-muted">Average Resting Heart Rate</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Metrics Table -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>HRV</th>
-                                <th>Recovery Score</th>
-                                <th>Resting Heart Rate</th>
-                                <th>Sleep Duration</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for metric in data.metrics %}
-                            <tr>
-                                <td>{{ metric.date|date:"M d, Y" }}</td>
-                                <td>{{ metric.hrv|default:"--"|floatformat:0 }}</td>
-                                <td>{{ metric.recovery_score|default:"--"|floatformat:0 }}%</td>
-                                <td>{{ metric.resting_heart_rate|default:"--"|floatformat:0 }}</td>
-                                <td>{{ metric.sleep_duration|duration }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body text-center">
+                <p>No health metrics found. Click the Sync button to fetch your Whoop data.</p>
             </div>
         </div>
-        {% empty %}
-        <div class="card">
-            <div class="card-body">
-                <p class="text-muted">No Whoop data found.</p>
-            </div>
-        </div>
-        {% endfor %}
-
-        {% if is_paginated %}
-        <nav aria-label="Month navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Next Month</a>
-                    </li>
-                {% endif %}
-
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Previous Month &raquo;</a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
         {% endif %}
     </div>
 </div>
