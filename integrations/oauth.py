@@ -1,6 +1,7 @@
 from social_core.backends.oauth import BaseOAuth2
 import logging
 from urllib.parse import urljoin
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +21,23 @@ class WhoopOAuth2(BaseOAuth2):
     
     def get_redirect_uri(self, state=None):
         """Return redirect URI exactly as registered in Whoop developer portal"""
-        # Use the exact redirect URI that's registered in the Whoop developer portal
-        return 'http://127.0.0.1:8000/complete/whoop/'
+        # Use the redirect URI from settings
+        redirect_uri = settings.SOCIAL_AUTH_WHOOP_REDIRECT_URI
+        logger.info(f"Using Whoop redirect URI: {redirect_uri}")
+        return redirect_uri
     
     def auth_params(self, state=None):
         params = super().auth_params(state)
         # Explicitly set the redirect URI
         params['redirect_uri'] = self.get_redirect_uri(state)
+        logger.info(f"Auth params redirect_uri: {params['redirect_uri']}")
         return params
     
     def auth_complete_params(self, state=None):
         params = super().auth_complete_params(state)
         # Explicitly set the redirect URI
         params['redirect_uri'] = self.get_redirect_uri(state)
+        logger.info(f"Auth complete params redirect_uri: {params['redirect_uri']}")
         return params
     
     def get_user_details(self, response):
