@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Log RENDER environment variable
+logger.info(f"RENDER environment variable is {'set to ' + os.getenv('RENDER') if os.getenv('RENDER') else 'NOT set'}")
+
 # Load environment variables from .env file if it exists
 # This is used for local development
 if os.path.exists(os.path.join(BASE_DIR, '.env')):
@@ -19,9 +22,13 @@ if os.path.exists(os.path.join(BASE_DIR, '.env')):
     load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # On Render, load from the secret file if it exists
-if os.getenv('RENDER') and os.path.exists('/etc/secrets/.env'):
-    logger.info("Loading environment variables from /etc/secrets/.env")
-    load_dotenv('/etc/secrets/.env')
+if os.getenv('RENDER'):
+    logger.info("RENDER environment variable is set, checking for secret file")
+    if os.path.exists('/etc/secrets/.env'):
+        logger.info("Secret file exists at /etc/secrets/.env, loading it")
+        load_dotenv('/etc/secrets/.env')
+    else:
+        logger.info("Secret file does NOT exist at /etc/secrets/.env")
 
 # Log environment variables for debugging (without exposing secrets)
 logger.info(f"STRAVA_CLIENT_ID is {'set' if os.getenv('STRAVA_CLIENT_ID') else 'NOT set'}")
