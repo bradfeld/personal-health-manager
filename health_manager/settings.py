@@ -12,25 +12,13 @@ logger = logging.getLogger(__name__)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Log RENDER environment variable
-logger.info(f"RENDER environment variable is {'set to ' + os.getenv('RENDER') if os.getenv('RENDER') else 'NOT set'}")
-
-# Load environment variables from .env file if it exists
-# This is used for local development
+# Load environment variables from .env file for local development
 if os.path.exists(os.path.join(BASE_DIR, '.env')):
     logger.info(f"Loading environment variables from {os.path.join(BASE_DIR, '.env')}")
     load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-# On Render, load from the secret file if it exists
-if os.getenv('RENDER'):
-    logger.info("RENDER environment variable is set, checking for secret file")
-    if os.path.exists('/etc/secrets/.env'):
-        logger.info("Secret file exists at /etc/secrets/.env, loading it")
-        load_dotenv('/etc/secrets/.env')
-    else:
-        logger.info("Secret file does NOT exist at /etc/secrets/.env")
-
 # Log environment variables for debugging (without exposing secrets)
+logger.info(f"RENDER environment variable is {'set to ' + os.getenv('RENDER') if os.getenv('RENDER') else 'NOT set'}")
 logger.info(f"STRAVA_CLIENT_ID is {'set' if os.getenv('STRAVA_CLIENT_ID') else 'NOT set'}")
 logger.info(f"STRAVA_CLIENT_SECRET is {'set' if os.getenv('STRAVA_CLIENT_SECRET') else 'NOT set'}")
 logger.info(f"WHOOP_CLIENT_ID is {'set' if os.getenv('WHOOP_CLIENT_ID') else 'NOT set'}")
@@ -134,9 +122,11 @@ SOCIAL_AUTH_WHOOP_SCOPE = ['offline', 'read:profile', 'read:workout', 'read:slee
 if os.getenv('RENDER'):
     SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'https://personal-health-manager.onrender.com/complete/whoop/'
     WHOOP_WEBHOOK_URL = 'https://personal-health-manager.onrender.com/webhooks/whoop/'
+    logger.info(f"Setting Whoop redirect URI for Render: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 else:
     SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop/'
     WHOOP_WEBHOOK_URL = os.getenv('WHOOP_WEBHOOK_URL', 'https://e845-76-159-151-41.ngrok-free.app/webhooks/whoop/')
+    logger.info(f"Setting Whoop redirect URI for local: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
     'response_type': 'code',
