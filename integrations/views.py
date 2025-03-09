@@ -179,13 +179,10 @@ def complete_whoop(request):
             # If no code and no error, this is a regular request to the root URL
             return redirect('metrics')
         
-        # Use the same redirect URI as in connect_whoop
+        # Use the appropriate redirect URI based on environment
         if os.getenv('RENDER'):
             redirect_uri = settings.SOCIAL_AUTH_WHOOP_REDIRECT_URI
             logger.info(f"Using Render redirect URI for token exchange: {redirect_uri}")
-        elif 'ngrok' in request.build_absolute_uri('/'):
-            redirect_uri = "https://ba2f-76-159-151-41.ngrok-free.app/complete/whoop"
-            logger.info(f"Using ngrok redirect URI for token exchange: {redirect_uri}")
         else:
             redirect_uri = "http://127.0.0.1:8000/complete/whoop"
             logger.info(f"Using local redirect URI for token exchange: {redirect_uri}")

@@ -125,20 +125,21 @@ if os.getenv('RENDER'):
     logger.info(f"Setting Whoop redirect URI for Render: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 else:
     SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop'
-    WHOOP_WEBHOOK_URL = os.getenv('WHOOP_WEBHOOK_URL', 'https://e845-76-159-151-41.ngrok-free.app/webhooks/whoop')
+    WHOOP_WEBHOOK_URL = 'http://127.0.0.1:8000/webhooks/whoop'
     logger.info(f"Setting Whoop redirect URI for local: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
     'response_type': 'code',
 }
 
-# For development, allow both localhost and ngrok URLs
+# For security, specify allowed hosts for social auth
 SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'personal-health-manager.onrender.com', '.onrender.com']
-SOCIAL_AUTH_ALLOWED_HOSTS.extend(['c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app'])
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = ['https://personal-health-manager.onrender.com', 'https://*.onrender.com']
-CSRF_TRUSTED_ORIGINS.extend(['https://c251-76-159-151-41.ngrok-free.app', 'https://e845-76-159-151-41.ngrok-free.app'])
+if not os.getenv('RENDER'):
+    CSRF_TRUSTED_ORIGINS.append('http://localhost:8000')
+    CSRF_TRUSTED_ORIGINS.append('http://127.0.0.1:8000')
 
 # Logging configuration
 LOGGING = {
