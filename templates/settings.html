@@ -12,7 +12,10 @@
             {% if strava_connected %}
                 <p class="text-success">✓ Connected to Strava</p>
                 <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync Activities</a>
-                <a href="{% url 'social:disconnect' 'strava' %}" class="btn btn-danger">Disconnect</a>
+                <form method="post" action="{% url 'social:disconnect' 'strava' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Disconnect</button>
+                </form>
             {% else %}
                 <p>Not connected to Strava</p>
                 <a href="{% url 'connect_strava' %}" class="btn btn-primary">Connect with Strava</a>
@@ -28,7 +31,10 @@
             {% if whoop_connected %}
                 <p class="text-success">✓ Connected to Whoop</p>
                 <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Data</a>
-                <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-danger">Disconnect</a>
+                <form method="post" action="{% url 'social:disconnect' 'whoop' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Disconnect</button>
+                </form>
             {% else %}
                 <p>Not connected to Whoop</p>
                 <a href="{% url 'connect_whoop' %}" class="btn btn-primary">Connect with Whoop</a>
