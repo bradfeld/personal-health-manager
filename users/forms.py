@@ -5,7 +5,7 @@ from .models import UserSettings
 class UserPreferencesForm(forms.ModelForm):
     class Meta:
         model = UserSettings
-        fields = ['sync_frequency', 'email_notifications', 'distance_unit']
+        fields = ['sync_frequency', 'distance_unit']
         widgets = {
             'sync_frequency': forms.Select(choices=[
                 ('hourly', 'Hourly'),

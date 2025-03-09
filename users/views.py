@@ -10,7 +10,7 @@ from .forms import UserPreferencesForm
 
 class UserSettingsView(LoginRequiredMixin, UpdateView):
     model = UserSettings
-    fields = ['sync_frequency', 'email_notifications', 'distance_unit']
+    fields = ['sync_frequency', 'distance_unit']
     template_name = 'users/settings.html'
     success_url = reverse_lazy('metrics')
     

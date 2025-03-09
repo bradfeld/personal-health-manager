@@ -11,11 +11,10 @@ class UserSettings(models.Model):
         ],
         default=24
     )
-    email_notifications = models.BooleanField(default=True)
     distance_unit = models.CharField(
         max_length=2,
         choices=[('km', 'Kilometers'), ('mi', 'Miles')],
-        default='km'
+        default='mi'
     )
     
     def __str__(self):
