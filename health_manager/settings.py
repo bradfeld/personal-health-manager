@@ -12,7 +12,7 @@ ROOT_URLCONF = 'health_manager.urls'
 
 # Use environment variables for sensitive data
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
-DEBUG = True  # Temporarily enable DEBUG to see error details
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Allow all hosts in development, specific hosts in production
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
