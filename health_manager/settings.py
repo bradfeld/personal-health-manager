@@ -92,6 +92,19 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = '/settings/'
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv('RENDER', False) != False  # True in production
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
+# Social Auth disconnect pipeline
+SOCIAL_AUTH_DISCONNECT_PIPELINE = (
+    'social_core.pipeline.disconnect.get_entries',
+    'social_core.pipeline.disconnect.revoke_tokens',
+    'social_core.pipeline.disconnect.disconnect',
+)
+
+# Allow disconnection even if it's the only authentication method
+SOCIAL_AUTH_ALLOWED_TO_DISCONNECT = True
+
+# Redirect URL after disconnection
+SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/settings/'
+
 # Time zone setting (add this before Celery config)
 TIME_ZONE = 'UTC'  # or your preferred timezone like 'America/New_York'
 USE_TZ = True
