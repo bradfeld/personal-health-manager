@@ -13,12 +13,20 @@ ROOT_URLCONF = 'health_manager.urls'
 # Use environment variables for sensitive data
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app']
 
-# Add your render web service URL
+# Allow all hosts in development, specific hosts in production
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# Add Render URL to allowed hosts
 if os.getenv('RENDER'):
+    RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+    if RENDER_EXTERNAL_HOSTNAME:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     ALLOWED_HOSTS.append('personal-health-manager.onrender.com')
     ALLOWED_HOSTS.append('.onrender.com')
+
+# Add ngrok URLs for development
+ALLOWED_HOSTS.extend(['c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -106,7 +114,12 @@ SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
 }
 
 # For development, allow both localhost and ngrok URLs
-SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'c251-76-159-151-41.ngrok-free.app', 'personal-health-manager.onrender.com']
+SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'personal-health-manager.onrender.com', '.onrender.com']
+SOCIAL_AUTH_ALLOWED_HOSTS.extend(['c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app'])
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = ['https://personal-health-manager.onrender.com', 'https://*.onrender.com']
+CSRF_TRUSTED_ORIGINS.extend(['https://c251-76-159-151-41.ngrok-free.app', 'https://e845-76-159-151-41.ngrok-free.app'])
 
 # Logging configuration
 LOGGING = {

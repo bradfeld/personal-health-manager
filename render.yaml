@@ -2,8 +2,11 @@ services:
   - type: web
     name: personal-health-manager
     env: python
-    buildCommand: pip install -r requirements.txt
+    region: oregon
+    buildCommand: ./build.sh
     startCommand: gunicorn health_manager.wsgi:application
+    plan: free
+    healthCheckPath: /login/
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -17,8 +20,21 @@ services:
         value: 4
       - key: DJANGO_SETTINGS_MODULE
         value: health_manager.settings
+      - key: RENDER
+        value: "True"
+      - key: DEBUG
+        value: "False"
+    autoDeploy: true
+
+  - type: redis
+    name: personal-health-redis
+    ipAllowList: []
+    plan: free
+    region: oregon
 
 databases:
   - name: personal-health-db
     databaseName: personal_health
-    user: personal_health_user 
+    user: personal_health_user
+    plan: free
+    region: oregon 
