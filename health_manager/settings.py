@@ -120,12 +120,12 @@ SOCIAL_AUTH_WHOOP_SCOPE = ['offline', 'read:profile', 'read:workout', 'read:slee
 
 # Update redirect URI based on environment
 if os.getenv('RENDER'):
-    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'https://personal-health-manager.onrender.com/complete/whoop/'
-    WHOOP_WEBHOOK_URL = 'https://personal-health-manager.onrender.com/webhooks/whoop/'
+    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'https://personal-health-manager.onrender.com/complete/whoop'
+    WHOOP_WEBHOOK_URL = 'https://personal-health-manager.onrender.com/webhooks/whoop'
     logger.info(f"Setting Whoop redirect URI for Render: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 else:
-    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop/'
-    WHOOP_WEBHOOK_URL = os.getenv('WHOOP_WEBHOOK_URL', 'https://e845-76-159-151-41.ngrok-free.app/webhooks/whoop/')
+    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop'
+    WHOOP_WEBHOOK_URL = os.getenv('WHOOP_WEBHOOK_URL', 'https://e845-76-159-151-41.ngrok-free.app/webhooks/whoop')
     logger.info(f"Setting Whoop redirect URI for local: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
