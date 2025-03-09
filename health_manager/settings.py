@@ -2,12 +2,21 @@ import os
 import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables from .env file
-load_dotenv()
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file if it exists
+# This is used for local development
+if os.path.exists(os.path.join(BASE_DIR, '.env')):
+    load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+# On Render, load from the secret file if it exists
+if os.getenv('RENDER') and os.path.exists('/etc/secrets/.env'):
+    load_dotenv('/etc/secrets/.env')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_URLCONF = 'health_manager.urls'
 
 # Use environment variables for sensitive data
