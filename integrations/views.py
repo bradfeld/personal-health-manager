@@ -17,6 +17,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 import secrets
 import string
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -179,28 +180,40 @@ def complete_whoop(request):
             return redirect('metrics')
         
         # Use the same redirect URI as in connect_whoop
-        if 'ngrok' in request.build_absolute_uri('/'):
-            redirect_uri = "https://ba2f-76-159-151-41.ngrok-free.app/complete/whoop/"
+        if os.getenv('RENDER'):
+            redirect_uri = settings.SOCIAL_AUTH_WHOOP_REDIRECT_URI
+            logger.info(f"Using Render redirect URI for token exchange: {redirect_uri}")
+        elif 'ngrok' in request.build_absolute_uri('/'):
+            redirect_uri = "https://ba2f-76-159-151-41.ngrok-free.app/complete/whoop"
+            logger.info(f"Using ngrok redirect URI for token exchange: {redirect_uri}")
         else:
-            redirect_uri = "http://127.0.0.1:8000/complete/whoop/"
-        
-        logger.info(f"Using redirect URI for token exchange: {redirect_uri}")
+            redirect_uri = "http://127.0.0.1:8000/complete/whoop"
+            logger.info(f"Using local redirect URI for token exchange: {redirect_uri}")
         
         # Exchange the code for an access token
-        response = requests.post(
-            'https://api.prod.whoop.com/oauth/oauth2/token',
-            data={
+        try:
+            token_data = {
                 'client_id': settings.SOCIAL_AUTH_WHOOP_KEY,
                 'client_secret': settings.SOCIAL_AUTH_WHOOP_SECRET,
                 'code': code,
                 'grant_type': 'authorization_code',
                 'redirect_uri': redirect_uri
             }
-        )
-        
-        if response.status_code != 200:
-            logger.error(f"Error exchanging code for token: {response.status_code} - {response.text}")
-            return render(request, 'error.html', {'error': f'Error connecting to Whoop: {response.text}'})
+            logger.info(f"Token exchange data: client_id={settings.SOCIAL_AUTH_WHOOP_KEY}, code={code[:5]}..., redirect_uri={redirect_uri}")
+            
+            response = requests.post(
+                'https://api.prod.whoop.com/oauth/oauth2/token',
+                data=token_data
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"Error exchanging code for token: {response.status_code} - {response.text}")
+                error_data = response.json() if response.text else {}
+                error_msg = error_data.get('error_description', response.text)
+                return render(request, 'error.html', {'error': f'Error connecting to Whoop: {error_msg}'})
+        except Exception as e:
+            logger.error(f"Exception during token exchange: {str(e)}")
+            return render(request, 'error.html', {'error': f'Error during token exchange: {str(e)}'})
         
         # Parse the response
         data = response.json()
