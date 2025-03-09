@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: personal-health-manager
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn health_manager.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: personal-health-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.13.1
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: DJANGO_SETTINGS_MODULE
+        value: health_manager.settings
+
+databases:
+  - name: personal-health-db
+    databaseName: personal_health
+    user: personal_health_user 

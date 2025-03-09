@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -10,9 +11,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_URLCONF = 'health_manager.urls'
 
 # Use environment variables for sensitive data
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'c251-76-159-151-41.ngrok-free.app', 'e845-76-159-151-41.ngrok-free.app']
+
+# Add your render web service URL
+if os.getenv('RENDER'):
+    ALLOWED_HOSTS.append('personal-health-manager.onrender.com')
+    ALLOWED_HOSTS.append('.onrender.com')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -32,6 +38,7 @@ INSTALLED_APPS = [
     'integrations',
     'django_celery_beat',
     'django_celery_results',
+    'whitenoise.runserver_nostatic',  # Add whitenoise for static files
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -57,7 +64,7 @@ SOCIAL_AUTH_STRAVA_EXTRA_DATA = [
 # Social Auth general settings
 SOCIAL_AUTH_RAISE_EXCEPTIONS = True
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/settings/'
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = False  # Set to True in production
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv('RENDER', False) != False  # True in production
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
 # Time zone setting (add this before Celery config)
@@ -65,7 +72,7 @@ TIME_ZONE = 'UTC'  # or your preferred timezone like 'America/New_York'
 USE_TZ = True
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -85,13 +92,21 @@ CELERY_BEAT_SCHEDULE = {
 SOCIAL_AUTH_WHOOP_KEY = os.getenv('WHOOP_CLIENT_ID')
 SOCIAL_AUTH_WHOOP_SECRET = os.getenv('WHOOP_CLIENT_SECRET')
 SOCIAL_AUTH_WHOOP_SCOPE = ['offline', 'read:profile', 'read:workout', 'read:sleep', 'read:recovery', 'read:body_measurement']
-SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop/'
+
+# Update redirect URI based on environment
+if os.getenv('RENDER'):
+    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'https://personal-health-manager.onrender.com/complete/whoop/'
+    WHOOP_WEBHOOK_URL = 'https://personal-health-manager.onrender.com/webhooks/whoop/'
+else:
+    SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop/'
+    WHOOP_WEBHOOK_URL = os.getenv('WHOOP_WEBHOOK_URL', 'https://e845-76-159-151-41.ngrok-free.app/webhooks/whoop/')
+
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
     'response_type': 'code',
 }
 
 # For development, allow both localhost and ngrok URLs
-SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'c251-76-159-151-41.ngrok-free.app']
+SOCIAL_AUTH_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'c251-76-159-151-41.ngrok-free.app', 'personal-health-manager.onrender.com']
 
 # Logging configuration
 LOGGING = {
@@ -107,7 +122,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'debug.log',
+            'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
             'formatter': 'verbose',
         },
         'console': {
@@ -118,53 +133,47 @@ LOGGING = {
     },
     'loggers': {
         'core': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
         'integrations': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
         'social_core': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
         'social_django': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
         'django.request': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
 }
+
+# Create logs directory if it doesn't exist
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 # Static files configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
-] 
+]
 
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'metrics'
-LOGOUT_REDIRECT_URL = 'login'
-LOGOUT_URL = 'logout'
-
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'metrics'
-SOCIAL_AUTH_LOGIN_ERROR_URL = 'settings'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 
-
-# Make sure MIDDLEWARE is properly configured
+# Add whitenoise for static files in production
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add whitenoise middleware
     'django.contrib.sessions.middleware.SessionMiddleware',    # Required for admin
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -173,6 +182,19 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
+
+# Whitenoise storage for static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'whoop'
+LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_URL = 'logout'
+
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'whoop'
+SOCIAL_AUTH_LOGIN_ERROR_URL = 'settings'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 
 
 # Make sure TEMPLATES is properly configured
 TEMPLATES = [
@@ -193,13 +215,20 @@ TEMPLATES = [
     },
 ] 
 
-# Add this database configuration
+# Database configuration - use dj_database_url to parse DATABASE_URL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
-} 
+}
+
+# Use PostgreSQL in production
+if os.getenv('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 
 # Add these settings for social auth pipeline
 SOCIAL_AUTH_PIPELINE = (
@@ -216,5 +245,12 @@ SOCIAL_AUTH_PIPELINE = (
     'integrations.pipelines.save_whoop_token',
 )
 
-# Add this with your other Whoop settings
-WHOOP_WEBHOOK_URL = 'https://c251-76-159-151-41.ngrok-free.app/webhooks/whoop/' 
+# Security settings for production
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') 
