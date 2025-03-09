@@ -3,6 +3,11 @@ import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
 from pathlib import Path
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,11 +15,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file if it exists
 # This is used for local development
 if os.path.exists(os.path.join(BASE_DIR, '.env')):
+    logger.info(f"Loading environment variables from {os.path.join(BASE_DIR, '.env')}")
     load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # On Render, load from the secret file if it exists
 if os.getenv('RENDER') and os.path.exists('/etc/secrets/.env'):
+    logger.info("Loading environment variables from /etc/secrets/.env")
     load_dotenv('/etc/secrets/.env')
+
+# Log environment variables for debugging (without exposing secrets)
+logger.info(f"STRAVA_CLIENT_ID is {'set' if os.getenv('STRAVA_CLIENT_ID') else 'NOT set'}")
+logger.info(f"STRAVA_CLIENT_SECRET is {'set' if os.getenv('STRAVA_CLIENT_SECRET') else 'NOT set'}")
+logger.info(f"WHOOP_CLIENT_ID is {'set' if os.getenv('WHOOP_CLIENT_ID') else 'NOT set'}")
+logger.info(f"WHOOP_CLIENT_SECRET is {'set' if os.getenv('WHOOP_CLIENT_SECRET') else 'NOT set'}")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 ROOT_URLCONF = 'health_manager.urls'
@@ -65,8 +78,8 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # Strava OAuth settings
-SOCIAL_AUTH_STRAVA_KEY = os.environ.get('STRAVA_CLIENT_ID')
-SOCIAL_AUTH_STRAVA_SECRET = os.environ.get('STRAVA_CLIENT_SECRET')
+SOCIAL_AUTH_STRAVA_KEY = os.getenv('STRAVA_CLIENT_ID')
+SOCIAL_AUTH_STRAVA_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 SOCIAL_AUTH_STRAVA_SCOPE = ['read', 'activity:read_all']
 SOCIAL_AUTH_STRAVA_AUTH_EXTRA_ARGUMENTS = {
     'approval_prompt': 'force',
