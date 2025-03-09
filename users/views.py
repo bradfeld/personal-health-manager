@@ -66,4 +66,22 @@ def settings(request):
         'form': form,
         'strava_connected': strava_connected,
         'whoop_connected': whoop_connected,
-    }) 
+    })
+
+@login_required
+def delete_user(request):
+    """View to handle user account deletion"""
+    if request.method == 'POST':
+        user = request.user
+        # Log the user out
+        from django.contrib.auth import logout
+        logout(request)
+        # Delete the user (this will cascade delete related data due to model relationships)
+        user.delete()
+        # Redirect to login page with a message
+        from django.contrib import messages
+        messages.success(request, 'Your account has been successfully deleted.')
+        return redirect('login')
+    
+    # If not POST, redirect to settings page
+    return redirect('settings') 

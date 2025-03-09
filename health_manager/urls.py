@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView
-from users.views import RegisterView, settings
+from users.views import RegisterView, settings, delete_user
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
     connect_strava, complete_strava,
@@ -24,6 +24,7 @@ urlpatterns = [
     path('strava/<int:pk>/', ActivityDetailView.as_view(), name='activity_detail'),
     path('whoop/', MetricsListView.as_view(), name='metrics'),
     path('settings/', settings, name='settings'),
+    path('delete-account/', delete_user, name='delete_user'),
     path('privacy/', PrivacyPolicyView.as_view(), name='privacy_policy'),
     
     # Social Auth URLs - move these before other URLs to ensure proper routing
