@@ -122,10 +122,16 @@ class ActivityListView(LoginRequiredMixin, ListView):
             
             # Check if user has Strava integration
             from integrations.models import UserIntegration
-            context['strava_connected'] = UserIntegration.objects.filter(
-                user=self.request.user,
-                provider='strava'
-            ).exists()
+            try:
+                strava_integration = UserIntegration.objects.get(
+                    user=self.request.user,
+                    provider='strava'
+                )
+                context['strava_connected'] = True
+                context['last_sync'] = strava_integration.last_sync
+            except UserIntegration.DoesNotExist:
+                context['strava_connected'] = False
+                context['last_sync'] = None
             
             return context
         except Exception as e:
@@ -137,6 +143,7 @@ class ActivityListView(LoginRequiredMixin, ListView):
             context['distance_unit'] = 'mi'
             context['conversion_factor'] = 0.621371
             context['strava_connected'] = False
+            context['last_sync'] = None
             return context
 
 class ActivityDetailView(LoginRequiredMixin, DetailView):
@@ -229,10 +236,16 @@ class MetricsListView(LoginRequiredMixin, ListView):
             
             # Check if user has Whoop integration
             from integrations.models import UserIntegration
-            context['whoop_connected'] = UserIntegration.objects.filter(
-                user=self.request.user,
-                provider='whoop'
-            ).exists()
+            try:
+                whoop_integration = UserIntegration.objects.get(
+                    user=self.request.user,
+                    provider='whoop'
+                )
+                context['whoop_connected'] = True
+                context['last_sync'] = whoop_integration.last_sync
+            except UserIntegration.DoesNotExist:
+                context['whoop_connected'] = False
+                context['last_sync'] = None
             
             return context
         except Exception as e:
@@ -244,6 +257,7 @@ class MetricsListView(LoginRequiredMixin, ListView):
             context['distance_unit'] = 'mi'
             context['conversion_factor'] = 0.621371
             context['whoop_connected'] = False
+            context['last_sync'] = None
             return context
 
 class PrivacyPolicyView(TemplateView):
