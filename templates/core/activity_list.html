@@ -85,7 +85,7 @@
                                     <td>{{ activity.activity_type }}</td>
                                     <td>{{ activity.duration|duration }}</td>
                                     <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
-                                    <td>{% if activity.distance and activity.duration %}{{ activity.duration|pace:activity.distance|multiply:conversion_factor }} /{{ distance_unit }}{% endif %}</td>
+                                    <td>{% if activity.distance and activity.duration %}{% calculate_pace activity.duration activity.distance conversion_factor %} /{{ distance_unit }}{% endif %}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
