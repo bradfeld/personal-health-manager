@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView
+from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView, RootView
 from users.views import RegisterView, settings, delete_user
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
@@ -10,8 +10,8 @@ from integrations.views import (
 )
 
 urlpatterns = [
-    # Root URL now redirects to metrics
-    path('', MetricsListView.as_view(), name='root'),
+    # Root URL redirects to metrics if authenticated, login if not
+    path('', RootView.as_view(), name='root'),
     
     path('admin/', admin.site.urls),
     path('login/', auth_views.LoginView.as_view(), name='login'),

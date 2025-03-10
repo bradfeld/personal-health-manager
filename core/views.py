@@ -1,5 +1,5 @@
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView, TemplateView
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import ListView, DetailView, TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum, Avg
 from django.db.models.functions import TruncMonth
@@ -7,6 +7,17 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Activity, HealthMetrics
 from integrations.models import UserIntegration
+
+class RootView(View):
+    """
+    Root view that redirects to metrics if user is authenticated,
+    otherwise redirects to login page
+    """
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect('metrics')
+        else:
+            return redirect('login')
 
 class ActivityListView(LoginRequiredMixin, ListView):
     model = Activity
@@ -16,8 +27,10 @@ class ActivityListView(LoginRequiredMixin, ListView):
 
     def dispatch(self, request, *args, **kwargs):
         # Create UserSettings for new users before any other processing
-        from users.models import UserSettings
-        UserSettings.objects.get_or_create(user=request.user)
+        # Only if the user is authenticated (should always be true due to LoginRequiredMixin)
+        if request.user.is_authenticated:
+            from users.models import UserSettings
+            UserSettings.objects.get_or_create(user=request.user)
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -120,8 +133,10 @@ class MetricsListView(LoginRequiredMixin, ListView):
 
     def dispatch(self, request, *args, **kwargs):
         # Create UserSettings for new users before any other processing
-        from users.models import UserSettings
-        UserSettings.objects.get_or_create(user=request.user)
+        # Only if the user is authenticated (should always be true due to LoginRequiredMixin)
+        if request.user.is_authenticated:
+            from users.models import UserSettings
+            UserSettings.objects.get_or_create(user=request.user)
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
