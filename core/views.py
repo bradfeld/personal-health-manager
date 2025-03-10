@@ -14,63 +14,95 @@ class ActivityListView(LoginRequiredMixin, ListView):
     context_object_name = 'months'
     paginate_by = 1
 
+    def dispatch(self, request, *args, **kwargs):
+        # Create UserSettings for new users before any other processing
+        from users.models import UserSettings
+        UserSettings.objects.get_or_create(user=request.user)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
-        # Get all Strava activities grouped by month
-        activities = Activity.objects.filter(
-            user=self.request.user,
-            source='strava'  # Only show Strava activities
-        ).annotate(
-            month=TruncMonth('date')
-        ).order_by('-date')
-
-        # Group activities and calculate stats by month
-        months = {}
-        for activity in activities:
-            month_key = activity.month
-            if month_key not in months:
-                months[month_key] = {
-                    'activities': [],
-                    'stats': {
-                        'total_activities': 0,
-                        'total_distance': 0,
-                        'total_duration': timedelta(),
-                        'activity_types': {}
-                    }
-                }
-            
-            months[month_key]['activities'].append(activity)
-            
-            # Update month stats
-            months[month_key]['stats']['total_activities'] += 1
-            months[month_key]['stats']['total_distance'] += activity.distance or 0
-            months[month_key]['stats']['total_duration'] += activity.duration
-            
-            # Count activity types
-            activity_type = activity.activity_type
-            if activity_type not in months[month_key]['stats']['activity_types']:
-                months[month_key]['stats']['activity_types'][activity_type] = 1
-            else:
-                months[month_key]['stats']['activity_types'][activity_type] += 1
-
-        # For each month, sort activities by exact datetime
-        for month_data in months.values():
-            month_data['activities'].sort(key=lambda x: x.date, reverse=True)
-
-        return sorted(months.items(), key=lambda x: x[0], reverse=True)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Get user's preferred distance unit
         try:
-            user_settings = self.request.user.usersettings
+            # Get all Strava activities grouped by month
+            activities = Activity.objects.filter(
+                user=self.request.user,
+                source='strava'  # Only show Strava activities
+            ).annotate(
+                month=TruncMonth('date')
+            ).order_by('-date')
+
+            # Group activities and calculate stats by month
+            months = {}
+            for activity in activities:
+                month_key = activity.month
+                if month_key not in months:
+                    months[month_key] = {
+                        'activities': [],
+                        'stats': {
+                            'total_activities': 0,
+                            'total_distance': 0,
+                            'total_duration': timedelta(),
+                            'activity_types': {}
+                        }
+                    }
+                
+                months[month_key]['activities'].append(activity)
+                
+                # Update month stats
+                months[month_key]['stats']['total_activities'] += 1
+                months[month_key]['stats']['total_distance'] += activity.distance or 0
+                months[month_key]['stats']['total_duration'] += activity.duration
+                
+                # Count activity types
+                activity_type = activity.activity_type
+                if activity_type not in months[month_key]['stats']['activity_types']:
+                    months[month_key]['stats']['activity_types'][activity_type] = 0
+                months[month_key]['stats']['activity_types'][activity_type] += 1
+            
+            # Sort activities by date
+            for month_data in months.values():
+                month_data['activities'].sort(key=lambda x: x.date, reverse=True)
+            
+            # Convert to list for pagination
+            return [(k, v) for k, v in sorted(months.items(), key=lambda x: x[0], reverse=True)]
+        except Exception as e:
+            # Log the error but return an empty list to avoid 500 errors
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in ActivityListView.get_queryset: {str(e)}")
+            return []
+    
+    def get_context_data(self, **kwargs):
+        try:
+            context = super().get_context_data(**kwargs)
+            
+            # Get user settings
+            from users.models import UserSettings
+            user_settings = UserSettings.objects.get(user=self.request.user)
+            
+            # Add distance unit to context
             context['distance_unit'] = user_settings.distance_unit
             context['conversion_factor'] = 0.621371 if user_settings.distance_unit == 'mi' else 1
-        except:
-            context['distance_unit'] = 'km'
-            context['conversion_factor'] = 1
-        
-        return context
+            
+            # Check if user has Strava integration
+            from integrations.models import UserIntegration
+            context['strava_connected'] = UserIntegration.objects.filter(
+                user=self.request.user,
+                provider='strava'
+            ).exists()
+            
+            return context
+        except Exception as e:
+            # Log the error but provide a basic context to avoid 500 errors
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in ActivityListView.get_context_data: {str(e)}")
+            
+            # Create a minimal context that won't cause template errors
+            context = super().get_context_data(**kwargs)
+            context['distance_unit'] = 'mi'
+            context['conversion_factor'] = 0.621371
+            context['strava_connected'] = False
+            return context
 
 class ActivityDetailView(LoginRequiredMixin, DetailView):
     model = Activity
@@ -86,74 +118,100 @@ class MetricsListView(LoginRequiredMixin, ListView):
     context_object_name = 'months'
     paginate_by = 1
 
+    def dispatch(self, request, *args, **kwargs):
+        # Create UserSettings for new users before any other processing
+        from users.models import UserSettings
+        UserSettings.objects.get_or_create(user=request.user)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
-        # Get all Whoop metrics grouped by month
-        metrics = HealthMetrics.objects.filter(
-            user=self.request.user,
-            source='whoop'  # Only show Whoop metrics
-        ).annotate(
-            month=TruncMonth('date')
-        ).order_by('-date')
-        
-        # Group metrics by month
-        months = {}
-        for metric in metrics:
-            month_key = metric.month
-            if month_key not in months:
-                months[month_key] = {
-                    'metrics': [],
-                    'stats': {
-                        'avg_rhr': 0,
-                        'avg_hrv': 0,
-                        'avg_recovery': 0,
-                        'total_sleep': timedelta(),
+        try:
+            # Get all Whoop metrics grouped by month
+            metrics = HealthMetrics.objects.filter(
+                user=self.request.user,
+                source='whoop'  # Only show Whoop metrics
+            ).annotate(
+                month=TruncMonth('date')
+            ).order_by('-date')
+            
+            # Group metrics by month
+            months = {}
+            for metric in metrics:
+                month_key = metric.month
+                if month_key not in months:
+                    months[month_key] = {
+                        'metrics': [],
+                        'stats': {
+                            'avg_rhr': 0,
+                            'avg_hrv': 0,
+                            'avg_recovery': 0,
+                            'total_sleep': timedelta(),
+                        }
                     }
-                }
+                
+                months[month_key]['metrics'].append(metric)
             
-            months[month_key]['metrics'].append(metric)
-        
-        # Calculate stats for each month
-        for month_key, month_data in months.items():
-            metrics_list = month_data['metrics']
+            # Calculate stats for each month
+            for month_key, month_data in months.items():
+                metrics_list = month_data['metrics']
+                
+                # Calculate averages
+                rhr_values = [m.resting_heart_rate for m in metrics_list if m.resting_heart_rate is not None]
+                hrv_values = [m.hrv for m in metrics_list if m.hrv is not None]
+                recovery_values = [m.recovery_score for m in metrics_list if m.recovery_score is not None]
+                
+                month_data['stats']['avg_rhr'] = sum(rhr_values) / len(rhr_values) if rhr_values else 0
+                month_data['stats']['avg_hrv'] = sum(hrv_values) / len(hrv_values) if hrv_values else 0
+                month_data['stats']['avg_recovery'] = sum(recovery_values) / len(recovery_values) if recovery_values else 0
+                
+                # Calculate total sleep
+                month_data['stats']['total_sleep'] = sum(
+                    (m.sleep_duration for m in metrics_list if m.sleep_duration is not None),
+                    timedelta()
+                )
             
-            # Calculate averages
-            rhr_values = [m.resting_heart_rate for m in metrics_list if m.resting_heart_rate is not None]
-            hrv_values = [m.hrv for m in metrics_list if m.hrv is not None]
-            recovery_values = [m.recovery_score for m in metrics_list if m.recovery_score is not None]
-            
-            month_data['stats']['avg_rhr'] = sum(rhr_values) / len(rhr_values) if rhr_values else 0
-            month_data['stats']['avg_hrv'] = sum(hrv_values) / len(hrv_values) if hrv_values else 0
-            month_data['stats']['avg_recovery'] = sum(recovery_values) / len(recovery_values) if recovery_values else 0
-            
-            # Calculate total sleep
-            month_data['stats']['total_sleep'] = sum(
-                (m.sleep_duration for m in metrics_list if m.sleep_duration is not None),
-                timedelta()
-            )
-        
-        # Convert the dictionary to a list of tuples for pagination
-        months_list = [(k, v) for k, v in sorted(months.items(), key=lambda x: x[0], reverse=True)]
-        return months_list
+            # Convert the dictionary to a list of tuples for pagination
+            months_list = [(k, v) for k, v in sorted(months.items(), key=lambda x: x[0], reverse=True)]
+            return months_list
+        except Exception as e:
+            # Log the error but return an empty list to avoid 500 errors
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in MetricsListView.get_queryset: {str(e)}")
+            return []
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Check if user has UserSettings, create if not
-        from users.models import UserSettings
-        user_settings, created = UserSettings.objects.get_or_create(user=self.request.user)
-        
-        # Add distance unit to context
-        context['distance_unit'] = user_settings.distance_unit
-        context['conversion_factor'] = 0.621371 if user_settings.distance_unit == 'mi' else 1
-        
-        # Check if user has Whoop integration
-        from integrations.models import UserIntegration
-        context['whoop_connected'] = UserIntegration.objects.filter(
-            user=self.request.user,
-            provider='whoop'
-        ).exists()
-        
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            
+            # Get user settings (should already be created in dispatch)
+            from users.models import UserSettings
+            user_settings = UserSettings.objects.get(user=self.request.user)
+            
+            # Add distance unit to context
+            context['distance_unit'] = user_settings.distance_unit
+            context['conversion_factor'] = 0.621371 if user_settings.distance_unit == 'mi' else 1
+            
+            # Check if user has Whoop integration
+            from integrations.models import UserIntegration
+            context['whoop_connected'] = UserIntegration.objects.filter(
+                user=self.request.user,
+                provider='whoop'
+            ).exists()
+            
+            return context
+        except Exception as e:
+            # Log the error but provide a basic context to avoid 500 errors
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in MetricsListView.get_context_data: {str(e)}")
+            
+            # Create a minimal context that won't cause template errors
+            context = super().get_context_data(**kwargs)
+            context['distance_unit'] = 'mi'
+            context['conversion_factor'] = 0.621371
+            context['whoop_connected'] = False
+            return context
 
 class PrivacyPolicyView(TemplateView):
     template_name = 'core/privacy_policy.html' 

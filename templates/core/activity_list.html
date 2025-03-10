@@ -6,101 +6,125 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        {% for month, data in months %}
+        {% if not strava_connected %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Connect Strava</h3>
+            </div>
+            <div class="card-body text-center">
+                <p>Connect your Strava account to see your activities.</p>
+                <a href="{% url 'connect_strava' %}" class="btn btn-primary">Connect with Strava</a>
+            </div>
+        </div>
+        {% elif months %}
+            {% for month, data in months %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3>{{ month|date:"F Y" }}</h3>
+                        <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Monthly Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.total_activities }}</h4>
+                                <p class="text-muted">Activities</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.total_distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}</h4>
+                                <p class="text-muted">Total Distance</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4>{{ data.stats.total_duration|duration }}</h4>
+                                <p class="text-muted">Total Duration</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Type Summary -->
+                    <div class="row mb-4">
+                        <div class="col">
+                            <h5>Activity Types</h5>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for type, count in data.stats.activity_types.items %}
+                                <span class="badge bg-primary">{{ type }}: {{ count }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activities Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Duration</th>
+                                    <th>Distance</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in data.activities %}
+                                <tr>
+                                    <td>{{ activity.date|date:"M d, Y" }}</td>
+                                    <td>{{ activity.activity_type }}</td>
+                                    <td>{{ activity.duration|duration }}</td>
+                                    <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
+                                    <td>{{ activity.source|title }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted">No Strava Data.</p>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if is_paginated %}
+            <nav aria-label="Month navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Next Month</a>
+                        </li>
+                    {% endif %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Previous Month &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
         <div class="card mb-4">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3>{{ month|date:"F Y" }}</h3>
-                    <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync Strava</a>
+                    <h3>No Strava Data</h3>
+                    <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
                 </div>
             </div>
-            
-            <div class="card-body">
-                <!-- Monthly Statistics -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.total_activities }}</h4>
-                            <p class="text-muted">Activities</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.total_distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}</h4>
-                            <p class="text-muted">Total Distance</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center">
-                            <h4>{{ data.stats.total_duration|duration }}</h4>
-                            <p class="text-muted">Total Duration</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Activity Type Summary -->
-                <div class="row mb-4">
-                    <div class="col">
-                        <h5>Activity Types</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for type, count in data.stats.activity_types.items %}
-                            <span class="badge bg-primary">{{ type }}: {{ count }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Activities Table -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Duration</th>
-                                <th>Distance</th>
-                                <th>Source</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for activity in data.activities %}
-                            <tr>
-                                <td>{{ activity.date|date:"M d, Y" }}</td>
-                                <td>{{ activity.activity_type }}</td>
-                                <td>{{ activity.duration|duration }}</td>
-                                <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
-                                <td>{{ activity.source|title }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body text-center">
+                <p>No Strava Data.</p>
             </div>
         </div>
-        {% empty %}
-        <div class="card">
-            <div class="card-body">
-                <p class="text-muted">No Strava Data.</p>
-            </div>
-        </div>
-        {% endfor %}
-
-        {% if is_paginated %}
-        <nav aria-label="Month navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Next Month</a>
-                    </li>
-                {% endif %}
-
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Previous Month &raquo;</a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
         {% endif %}
     </div>
 </div>
