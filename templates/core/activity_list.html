@@ -70,7 +70,6 @@
                                     <th>Type</th>
                                     <th>Duration</th>
                                     <th>Distance</th>
-                                    <th>Source</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -80,7 +79,6 @@
                                     <td>{{ activity.activity_type }}</td>
                                     <td>{{ activity.duration|duration }}</td>
                                     <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
-                                    <td>{{ activity.source|title }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
