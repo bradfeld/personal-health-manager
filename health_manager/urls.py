@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView, RootView
+from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView, RootView, LoginRedirectView
 from users.views import RegisterView, settings, delete_user
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
@@ -19,6 +19,7 @@ urlpatterns = [
         next_page='login',
         template_name='registration/logged_out.html'
     ), name='logout'),
+    path('login-redirect/', LoginRedirectView.as_view(), name='login_redirect'),
     path('register/', RegisterView.as_view(), name='register'),
     path('strava/', ActivityListView.as_view(), name='activities'),
     path('strava/<int:pk>/', ActivityDetailView.as_view(), name='activity_detail'),

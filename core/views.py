@@ -7,6 +7,9 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Activity, HealthMetrics
 from integrations.models import UserIntegration
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RootView(View):
     """
@@ -18,6 +21,29 @@ class RootView(View):
             return redirect('metrics')
         else:
             return redirect('login')
+
+class LoginRedirectView(LoginRequiredMixin, View):
+    """
+    Custom view to handle login redirects.
+    If user has no data, redirect to settings page.
+    Otherwise, redirect to metrics page.
+    """
+    def get(self, request, *args, **kwargs):
+        try:
+            # Check if user has any data
+            has_activities = Activity.objects.filter(user=request.user).exists()
+            has_metrics = HealthMetrics.objects.filter(user=request.user).exists()
+            
+            if not has_activities and not has_metrics:
+                logger.info(f"User {request.user.username} has no data, redirecting to settings")
+                return redirect('settings')
+            else:
+                logger.info(f"User {request.user.username} has data, redirecting to metrics")
+                return redirect('metrics')
+        except Exception as e:
+            logger.error(f"Error in LoginRedirectView: {e}")
+            # Default to metrics page if there's an error
+            return redirect('metrics')
 
 class ActivityListView(LoginRequiredMixin, ListView):
     model = Activity
@@ -79,8 +105,6 @@ class ActivityListView(LoginRequiredMixin, ListView):
             return [(k, v) for k, v in sorted(months.items(), key=lambda x: x[0], reverse=True)]
         except Exception as e:
             # Log the error but return an empty list to avoid 500 errors
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error in ActivityListView.get_queryset: {str(e)}")
             return []
     
@@ -106,8 +130,6 @@ class ActivityListView(LoginRequiredMixin, ListView):
             return context
         except Exception as e:
             # Log the error but provide a basic context to avoid 500 errors
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error in ActivityListView.get_context_data: {str(e)}")
             
             # Create a minimal context that won't cause template errors
@@ -190,8 +212,6 @@ class MetricsListView(LoginRequiredMixin, ListView):
             return months_list
         except Exception as e:
             # Log the error but return an empty list to avoid 500 errors
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error in MetricsListView.get_queryset: {str(e)}")
             return []
     
@@ -217,8 +237,6 @@ class MetricsListView(LoginRequiredMixin, ListView):
             return context
         except Exception as e:
             # Log the error but provide a basic context to avoid 500 errors
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error in MetricsListView.get_context_data: {str(e)}")
             
             # Create a minimal context that won't cause template errors
