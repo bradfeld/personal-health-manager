@@ -11,7 +11,7 @@
         <div class="card-body">
             {% if strava_connected %}
                 <p class="text-success">✓ Connected to Strava</p>
-                <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync Activities</a>
+                <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
             {% else %}
                 <p>Not connected to Strava</p>
                 <a href="{% url 'connect_strava' %}" class="btn btn-primary">Connect with Strava</a>
@@ -26,7 +26,7 @@
         <div class="card-body">
             {% if whoop_connected %}
                 <p class="text-success">✓ Connected to Whoop</p>
-                <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Data</a>
+                <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
             {% else %}
                 <p>Not connected to Whoop</p>
                 <a href="{% url 'connect_whoop' %}" class="btn btn-primary">Connect with Whoop</a>
