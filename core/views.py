@@ -131,7 +131,9 @@ class MetricsListView(LoginRequiredMixin, ListView):
                 timedelta()
             )
         
-        return months
+        # Convert the dictionary to a list of tuples for pagination
+        months_list = [(k, v) for k, v in sorted(months.items(), key=lambda x: x[0], reverse=True)]
+        return months_list
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

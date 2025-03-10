@@ -17,12 +17,12 @@
             </div>
         </div>
         {% elif months %}
-            {% for month, data in months.items %}
+            {% for month, data in months %}
             <div class="card mb-4">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h3>{{ month|date:"F Y" }}</h3>
-                        <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Whoop</a>
+                        <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
                     </div>
                 </div>
                 
@@ -76,12 +76,6 @@
                     </div>
                 </div>
             </div>
-            {% empty %}
-            <div class="card">
-                <div class="card-body">
-                    <p class="text-muted">No Whoop data found.</p>
-                </div>
-            </div>
             {% endfor %}
 
             {% if is_paginated %}
@@ -106,7 +100,7 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h3>No Whoop Data</h3>
-                    <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync Whoop</a>
+                    <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
                 </div>
             </div>
             <div class="card-body text-center">
