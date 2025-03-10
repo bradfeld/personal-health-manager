@@ -24,7 +24,7 @@
                         <h3>{{ month|date:"F Y" }}</h3>
                         <div>
                             {% if last_sync %}
-                            <small class="text-muted me-2">Last sync: {{ last_sync|date:"M d, Y H:i" }}</small>
+                            <small class="text-muted me-2">Last sync: {{ last_sync|localize_datetime }}</small>
                             {% endif %}
                             <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
                         </div>
@@ -107,7 +107,7 @@
                     <h3>No Whoop Data</h3>
                     <div>
                         {% if last_sync %}
-                        <small class="text-muted me-2">Last sync: {{ last_sync|date:"M d, Y H:i" }}</small>
+                        <small class="text-muted me-2">Last sync: {{ last_sync|localize_datetime }}</small>
                         {% endif %}
                         <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
                     </div>

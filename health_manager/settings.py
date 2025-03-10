@@ -106,7 +106,7 @@ SOCIAL_AUTH_ALLOWED_TO_DISCONNECT = True
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/settings/'
 
 # Time zone setting (add this before Celery config)
-TIME_ZONE = 'UTC'  # or your preferred timezone like 'America/New_York'
+TIME_ZONE = 'America/New_York'  # Eastern Time
 USE_TZ = True
 
 # Celery Configuration
