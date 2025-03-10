@@ -86,30 +86,20 @@ def calculate_pace(duration_td, distance, conversion_factor):
         return "—"
 
 @register.filter
-def localize_datetime(dt, format_string=None):
+def localize_datetime(dt):
     """
-    Convert a UTC datetime to the local timezone and format it
+    Convert a datetime to an ISO format string for client-side formatting
     Args:
-        dt: datetime object (assumed to be in UTC)
-        format_string: optional format string (defaults to "M d, Y H:i")
+        dt: datetime object
     Returns:
-        Formatted datetime string in the local timezone
+        ISO formatted datetime string with UTC timezone
     """
     if dt is None:
         return ""
-    
-    # Get the timezone from settings
-    local_tz = pytz.timezone(settings.TIME_ZONE)
     
     # If the datetime is naive (no timezone info), assume it's UTC
     if dt.tzinfo is None:
         dt = pytz.utc.localize(dt)
     
-    # Convert to local timezone
-    local_dt = dt.astimezone(local_tz)
-    
-    # Format the datetime
-    if format_string is None:
-        format_string = "M d, Y H:i"
-    
-    return local_dt.strftime(format_string.replace('M', '%b').replace('d', '%d').replace('Y', '%Y').replace('H', '%H').replace('i', '%M')) 
+    # Return ISO format for JavaScript to handle
+    return dt.isoformat() 

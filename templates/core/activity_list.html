@@ -24,7 +24,7 @@
                         <h3>{{ month|date:"F Y" }}</h3>
                         <div>
                             {% if last_sync %}
-                            <small class="text-muted me-2">Last sync: {{ last_sync|localize_datetime }}</small>
+                            <small class="text-muted me-2">Last sync: <span class="local-datetime" data-datetime="{{ last_sync|localize_datetime }}"></span></small>
                             {% endif %}
                             <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
                         </div>
@@ -125,7 +125,7 @@
                     <h3>No Strava Data</h3>
                     <div>
                         {% if last_sync %}
-                        <small class="text-muted me-2">Last sync: {{ last_sync|localize_datetime }}</small>
+                        <small class="text-muted me-2">Last sync: <span class="local-datetime" data-datetime="{{ last_sync|localize_datetime }}"></span></small>
                         {% endif %}
                         <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
                     </div>
