@@ -33,6 +33,23 @@
         
         <div class="card mt-4">
             <div class="card-header">
+                <h3>Admin Access</h3>
+            </div>
+            <div class="card-body">
+                {% if user.is_staff %}
+                    <div class="alert alert-success">
+                        <p><strong>You have admin access.</strong></p>
+                        <a href="{% url 'admin:index' %}" class="btn btn-primary">Go to Admin Panel</a>
+                    </div>
+                {% else %}
+                    <p>Admin access is required to manage users, view all data, and configure system settings.</p>
+                    <p>If you need admin access, please contact the site administrator.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
                 <h3>Connected Services</h3>
             </div>
             <div class="card-body">
