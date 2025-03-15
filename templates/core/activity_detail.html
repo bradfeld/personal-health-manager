@@ -37,8 +37,25 @@
                     <div class="col-md-6">
                         <h4>Source</h4>
                         <p>{{ activity.source|title }}</p>
+                        {% if activity.source == 'strava' %}
+                        <div class="mt-2">
+                            <a href="https://www.strava.com/activities/{{ activity.external_id }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                View on Strava
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+                
+                {% if activity.source == 'strava' %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="mt-2">
+                            <img src="/static/images/strava/powered_by_strava.svg" alt="Powered by Strava" height="30">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
