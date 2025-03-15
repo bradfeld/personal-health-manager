@@ -87,11 +87,23 @@ def settings(request):
         except:
             pass
     
+    whoop_last_sync = None
+    if whoop_connected:
+        try:
+            whoop_integration = UserIntegration.objects.get(
+                user=request.user,
+                provider='whoop'
+            )
+            whoop_last_sync = whoop_integration.last_sync
+        except:
+            pass
+    
     return render(request, 'settings.html', {
         'form': form,
         'strava_connected': strava_connected,
         'whoop_connected': whoop_connected,
         'strava_last_sync': strava_last_sync,
+        'whoop_last_sync': whoop_last_sync,
     })
 
 @login_required

@@ -25,7 +25,11 @@
                     {% if strava_connected %}
                         <div class="mt-2 mb-3">
                             {% if strava_last_sync %}
-                                <small class="text-muted">Last synced: {{ strava_last_sync|date:"F j, Y, g:i a" }}</small>
+                                <small class="text-muted">Last synced: 
+                                    <span class="local-datetime" data-datetime="{{ strava_last_sync|date:'c' }}">
+                                        {{ strava_last_sync|date:"F j, Y, g:i a" }}
+                                    </span>
+                                </small>
                             {% endif %}
                         </div>
                         <div class="btn-group">
@@ -41,12 +45,32 @@
                 </div>
                 
                 <div class="mb-3">
-                    <h4>Whoop</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4>Whoop</h4>
+                        {% if whoop_connected %}
+                            <span class="badge bg-success">Connected</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                        {% endif %}
+                    </div>
+                    
                     {% if whoop_connected %}
-                    <p class="text-success">Connected</p>
-                    <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-danger">Disconnect</a>
+                        <div class="mt-2 mb-3">
+                            {% if whoop_last_sync %}
+                                <small class="text-muted">Last synced: 
+                                    <span class="local-datetime" data-datetime="{{ whoop_last_sync|date:'c' }}">
+                                        {{ whoop_last_sync|date:"F j, Y, g:i a" }}
+                                    </span>
+                                </small>
+                            {% endif %}
+                        </div>
+                        <div class="btn-group">
+                            <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-outline-primary">Refresh Connection</a>
+                            <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-outline-danger">Disconnect</a>
+                        </div>
                     {% else %}
-                    <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect Whoop</a>
+                        <p class="text-muted">Connect your Whoop account to sync your health metrics</p>
+                        <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect Whoop</a>
                     {% endif %}
                 </div>
             </div>
