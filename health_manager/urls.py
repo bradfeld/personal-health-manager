@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from core.views import ActivityListView, ActivityDetailView, MetricsListView, PrivacyPolicyView, RootView, LoginRedirectView
+from core.views import (
+    ActivityListView, ActivityDetailView, MetricsListView, 
+    PrivacyPolicyView, RootView, LoginRedirectView, AdminDashboardView
+)
 from users.views import RegisterView, settings, delete_user
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
@@ -14,6 +17,7 @@ urlpatterns = [
     path('', RootView.as_view(), name='root'),
     
     path('admin/', admin.site.urls),
+    path('admin-dashboard/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(
         next_page='login',

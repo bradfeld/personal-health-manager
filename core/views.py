@@ -261,4 +261,22 @@ class MetricsListView(LoginRequiredMixin, ListView):
             return context
 
 class PrivacyPolicyView(TemplateView):
-    template_name = 'core/privacy_policy.html' 
+    template_name = 'core/privacy_policy.html'
+
+class AdminDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Custom admin dashboard view that maintains the application's navigation bar.
+    This provides a link to the Django admin interface.
+    """
+    template_name = 'core/admin_dashboard.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Only allow staff users to access this view
+        if not request.user.is_staff:
+            return redirect('metrics')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add any additional context data needed for the admin dashboard
+        return context 
