@@ -223,11 +223,11 @@ MIDDLEWARE = [
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'login_redirect'
+LOGIN_REDIRECT_URL = 'settings'
 LOGOUT_REDIRECT_URL = 'login'
 LOGOUT_URL = 'logout'
 
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'login_redirect'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'settings'
 SOCIAL_AUTH_LOGIN_ERROR_URL = 'settings'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 

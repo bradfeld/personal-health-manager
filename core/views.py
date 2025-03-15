@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 class RootView(View):
     """
-    Root view that redirects to metrics if user is authenticated,
+    Root view that redirects to settings if user is authenticated,
     otherwise redirects to login page
     """
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect('metrics')
+            return redirect('settings')
         else:
             return redirect('login')
 
