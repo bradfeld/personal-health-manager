@@ -14,15 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file for local development
 if os.path.exists(os.path.join(BASE_DIR, '.env')):
-    logger.info(f"Loading environment variables from {os.path.join(BASE_DIR, '.env')}")
     load_dotenv(os.path.join(BASE_DIR, '.env'))
-
-# Log environment variables for debugging (without exposing secrets)
-logger.info(f"RENDER environment variable is {'set to ' + os.getenv('RENDER') if os.getenv('RENDER') else 'NOT set'}")
-logger.info(f"STRAVA_CLIENT_ID is {'set' if os.getenv('STRAVA_CLIENT_ID') else 'NOT set'}")
-logger.info(f"STRAVA_CLIENT_SECRET is {'set' if os.getenv('STRAVA_CLIENT_SECRET') else 'NOT set'}")
-logger.info(f"WHOOP_CLIENT_ID is {'set' if os.getenv('WHOOP_CLIENT_ID') else 'NOT set'}")
-logger.info(f"WHOOP_CLIENT_SECRET is {'set' if os.getenv('WHOOP_CLIENT_SECRET') else 'NOT set'}")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 ROOT_URLCONF = 'health_manager.urls'
@@ -135,11 +127,9 @@ SOCIAL_AUTH_WHOOP_SCOPE = ['offline', 'read:profile', 'read:workout', 'read:slee
 if os.getenv('RENDER'):
     SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'https://personal-health-manager.onrender.com/complete/whoop'
     WHOOP_WEBHOOK_URL = 'https://personal-health-manager.onrender.com/webhooks/whoop'
-    logger.info(f"Setting Whoop redirect URI for Render: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 else:
     SOCIAL_AUTH_WHOOP_REDIRECT_URI = 'http://127.0.0.1:8000/complete/whoop'
     WHOOP_WEBHOOK_URL = 'http://127.0.0.1:8000/webhooks/whoop'
-    logger.info(f"Setting Whoop redirect URI for local: {SOCIAL_AUTH_WHOOP_REDIRECT_URI}")
 
 SOCIAL_AUTH_WHOOP_AUTH_EXTRA_ARGUMENTS = {
     'response_type': 'code',
