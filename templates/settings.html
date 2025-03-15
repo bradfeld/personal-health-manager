@@ -4,70 +4,10 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-6 offset-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h2>User Settings</h2>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-                        {% if field.errors %}
-                        <div class="alert alert-danger">
-                            {{ field.errors }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3>Security</h3>
-            </div>
-            <div class="card-body">
-                <p>Manage your account security settings.</p>
-                <a href="{% url 'password_change' %}" class="btn btn-primary">Change Password</a>
-                
-                <hr class="my-4">
-                
-                <h4>Account Deletion</h4>
-                <p class="text-danger">Warning: This action cannot be undone.</p>
-                <form method="post" action="{% url 'delete_user' %}" onsubmit="return confirm('Are you sure you want to permanently delete your account? This cannot be undone.');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Delete Account</button>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3>Admin Access</h3>
-            </div>
-            <div class="card-body">
-                {% if user.is_staff %}
-                    <div class="alert alert-success">
-                        <p><strong>You have admin access.</strong></p>
-                        <a href="{% url 'admin:index' %}" class="btn btn-primary">Go to Admin Panel</a>
-                    </div>
-                {% else %}
-                    <p>Admin access is required to manage users, view all data, and configure system settings.</p>
-                    <p>If you need admin access, please contact the site administrator.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="card mt-4">
+    <!-- First row with two columns -->
+    <div class="col-md-6">
+        <!-- Connected Services (Left column) -->
+        <div class="card h-100">
             <div class="card-header">
                 <h3>Connected Services</h3>
             </div>
@@ -108,6 +48,64 @@
                     {% else %}
                     <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect Whoop</a>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <!-- User Settings (Right column) -->
+        <div class="card h-100">
+            <div class="card-header">
+                <h3>User Settings</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="alert alert-danger">
+                            {{ field.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second row for Security -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Security</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Password Management</h4>
+                        <p>Change your account password to maintain security.</p>
+                        <a href="{% url 'password_change' %}" class="btn btn-primary">Change Password</a>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4>Account Deletion</h4>
+                        <p class="text-danger">Warning: This action cannot be undone.</p>
+                        <form method="post" action="{% url 'delete_user' %}" onsubmit="return confirm('Are you sure you want to permanently delete your account? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Delete Account</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
