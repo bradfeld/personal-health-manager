@@ -1,12 +1,14 @@
-from django.views.generic.edit import UpdateView, CreateView
+from django.views.generic.edit import UpdateView, CreateView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse_lazy
+from django.contrib import messages
 from .models import UserSettings
 from integrations.models import UserIntegration
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import UserPreferencesForm
+from .forms import UserPreferencesForm, CustomPasswordChangeForm
 
 class UserSettingsView(LoginRequiredMixin, UpdateView):
     model = UserSettings
@@ -33,6 +35,17 @@ class UserSettingsView(LoginRequiredMixin, UpdateView):
         settings, created = UserSettings.objects.get_or_create(user=self.request.user)
         return settings
 
+class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    """Custom password change view with our template and form."""
+    form_class = CustomPasswordChangeForm
+    template_name = 'users/password_change.html'
+    success_url = reverse_lazy('settings')
+    
+    def form_valid(self, form):
+        # Add a success message
+        messages.success(self.request, "Your password has been successfully updated!")
+        return super().form_valid(form)
+
 class RegisterView(CreateView):
     form_class = UserCreationForm
     template_name = 'registration/register.html'
@@ -47,6 +60,7 @@ def settings(request):
         form = UserPreferencesForm(request.POST, instance=user_settings)
         if form.is_valid():
             form.save()
+            messages.success(request, "Settings updated successfully!")
             return redirect('settings')
     else:
         form = UserPreferencesForm(instance=user_settings)
@@ -62,10 +76,22 @@ def settings(request):
         provider='whoop'
     ).exists()
     
+    strava_last_sync = None
+    if strava_connected:
+        try:
+            strava_integration = UserIntegration.objects.get(
+                user=request.user,
+                provider='strava'
+            )
+            strava_last_sync = strava_integration.last_sync
+        except:
+            pass
+    
     return render(request, 'settings.html', {
         'form': form,
         'strava_connected': strava_connected,
         'whoop_connected': whoop_connected,
+        'strava_last_sync': strava_last_sync,
     })
 
 @login_required
@@ -79,7 +105,6 @@ def delete_user(request):
         # Delete the user (this will cascade delete related data due to model relationships)
         user.delete()
         # Redirect to login page with a message
-        from django.contrib import messages
         messages.success(request, 'Your account has been successfully deleted.')
         return redirect('login')
     

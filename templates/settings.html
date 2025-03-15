@@ -1,62 +1,115 @@
 {% extends 'base.html' %}
 
+{% block title %}Settings - Health Manager{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Settings</h2>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Strava Integration</h3>
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h2>User Settings</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="alert alert-danger">
+                            {{ field.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+            </div>
         </div>
-        <div class="card-body">
-            {% if strava_connected %}
-                <p class="text-success">✓ Connected to Strava</p>
-                <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
-            {% else %}
-                <p>Not connected to Strava</p>
-                <a href="{% url 'connect_strava' %}" class="btn btn-primary">Connect with Strava</a>
-            {% endif %}
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Security</h3>
+            </div>
+            <div class="card-body">
+                <p>Manage your account security settings.</p>
+                <a href="{% url 'password_change' %}" class="btn btn-primary">Change Password</a>
+                
+                <hr class="my-4">
+                
+                <h4>Account Deletion</h4>
+                <p class="text-danger">Warning: This action cannot be undone.</p>
+                <form method="post" action="{% url 'delete_user' %}" onsubmit="return confirm('Are you sure you want to permanently delete your account? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Account</button>
+                </form>
+            </div>
         </div>
-    </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Admin Access</h3>
+            </div>
+            <div class="card-body">
+                {% if user.is_staff %}
+                    <div class="alert alert-success">
+                        <p><strong>You have admin access.</strong></p>
+                        <a href="{% url 'admin:index' %}" class="btn btn-primary">Go to Admin Panel</a>
+                    </div>
+                {% else %}
+                    <p>Admin access is required to manage users, view all data, and configure system settings.</p>
+                    <p>If you need admin access, please contact the site administrator.</p>
+                {% endif %}
+            </div>
+        </div>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Whoop Integration</h3>
-        </div>
-        <div class="card-body">
-            {% if whoop_connected %}
-                <p class="text-success">✓ Connected to Whoop</p>
-                <a href="{% url 'sync_whoop' %}" class="btn btn-primary">Sync</a>
-            {% else %}
-                <p>Not connected to Whoop</p>
-                <a href="{% url 'connect_whoop' %}" class="btn btn-primary">Connect with Whoop</a>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>User Preferences</h3>
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">Save Preferences</button>
-            </form>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h3>Account Management</h3>
-        </div>
-        <div class="card-body text-center">
-            <p class="text-danger">Warning: This action cannot be undone. All your data will be permanently deleted.</p>
-            <form method="post" action="{% url 'delete_user' %}" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Delete My Account</button>
-            </form>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Connected Services</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4>Strava</h4>
+                        {% if strava_connected %}
+                            <span class="badge bg-success">Connected</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if strava_connected %}
+                        <div class="mt-2 mb-3">
+                            {% if strava_last_sync %}
+                                <small class="text-muted">Last synced: {{ strava_last_sync|date:"F j, Y, g:i a" }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="btn-group">
+                            <a href="{% url 'social:begin' 'strava' %}" class="btn btn-outline-primary">Refresh Connection</a>
+                            <a href="{% url 'social:disconnect' 'strava' %}" class="btn btn-outline-danger">Disconnect</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Connect your Strava account to sync your activities</p>
+                        <a href="{% url 'social:begin' 'strava' %}" class="btn btn-primary">
+                            Connect with Strava
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <h4>Whoop</h4>
+                    {% if whoop_connected %}
+                    <p class="text-success">Connected</p>
+                    <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-danger">Disconnect</a>
+                    {% else %}
+                    <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect Whoop</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -5,7 +5,7 @@ from core.views import (
     ActivityListView, ActivityDetailView, MetricsListView, 
     PrivacyPolicyView, RootView, LoginRedirectView, AdminDashboardView
 )
-from users.views import RegisterView, settings, delete_user
+from users.views import RegisterView, settings, delete_user, CustomPasswordChangeView
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
     connect_strava, complete_strava,
@@ -25,6 +25,7 @@ urlpatterns = [
     ), name='logout'),
     path('login-redirect/', LoginRedirectView.as_view(), name='login_redirect'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('password-change/', CustomPasswordChangeView.as_view(), name='password_change'),
     path('strava/', ActivityListView.as_view(), name='activities'),
     path('strava/<int:pk>/', ActivityDetailView.as_view(), name='activity_detail'),
     path('whoop/', MetricsListView.as_view(), name='metrics'),
