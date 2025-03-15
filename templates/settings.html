@@ -32,10 +32,7 @@
                                 </small>
                             {% endif %}
                         </div>
-                        <div class="btn-group">
-                            <a href="{% url 'social:begin' 'strava' %}" class="btn btn-outline-primary">Refresh Connection</a>
-                            <a href="{% url 'social:disconnect' 'strava' %}" class="btn btn-outline-danger">Disconnect</a>
-                        </div>
+                        <a href="{% url 'social:disconnect' 'strava' %}" class="btn btn-outline-danger">Disconnect</a>
                     {% else %}
                         <p class="text-muted">Connect your Strava account to sync your activities</p>
                         <a href="{% url 'social:begin' 'strava' %}" class="btn btn-primary">
@@ -64,10 +61,7 @@
                                 </small>
                             {% endif %}
                         </div>
-                        <div class="btn-group">
-                            <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-outline-primary">Refresh Connection</a>
-                            <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-outline-danger">Disconnect</a>
-                        </div>
+                        <a href="{% url 'social:disconnect' 'whoop' %}" class="btn btn-outline-danger">Disconnect</a>
                     {% else %}
                         <p class="text-muted">Connect your Whoop account to sync your health metrics</p>
                         <a href="{% url 'social:begin' 'whoop' %}" class="btn btn-primary">Connect Whoop</a>
