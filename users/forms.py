@@ -8,15 +8,21 @@ class UserPreferencesForm(forms.ModelForm):
         model = UserSettings
         fields = ['sync_frequency', 'distance_unit']
         widgets = {
-            'sync_frequency': forms.Select(choices=[
-                ('hourly', 'Hourly'),
-                ('daily', 'Daily'),
-                ('weekly', 'Weekly')
-            ]),
-            'distance_unit': forms.Select(choices=[
-                ('mi', 'Miles'),
-                ('km', 'Kilometers')
-            ])
+            'sync_frequency': forms.Select(
+                choices=[
+                    ('hourly', 'Hourly'),
+                    ('daily', 'Daily'),
+                    ('weekly', 'Weekly')
+                ],
+                attrs={'class': 'form-control form-select'}
+            ),
+            'distance_unit': forms.Select(
+                choices=[
+                    ('mi', 'Miles'),
+                    ('km', 'Kilometers')
+                ],
+                attrs={'class': 'form-control form-select'}
+            )
         }
 
 class CustomPasswordChangeForm(PasswordChangeForm):
