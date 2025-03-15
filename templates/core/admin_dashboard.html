@@ -14,7 +14,7 @@
                 <p>Select an admin option below:</p>
                 
                 <div class="list-group mb-4">
-                    <a href="{% url 'admin:index' %}" class="list-group-item list-group-item-action" target="_blank">
+                    <a href="/admin/" class="list-group-item list-group-item-action" target="_blank">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">Django Admin Interface</h5>
                         </div>
@@ -29,7 +29,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">User Management</h5>
                                 <p class="card-text">Manage user accounts and permissions.</p>
-                                <a href="{% url 'admin:auth_user_changelist' %}" class="btn btn-primary" target="_blank">Manage Users</a>
+                                <a href="/admin/auth/user/" class="btn btn-primary" target="_blank">Manage Users</a>
                             </div>
                         </div>
                     </div>
@@ -38,7 +38,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">Activity Data</h5>
                                 <p class="card-text">View and manage activity data.</p>
-                                <a href="{% url 'admin:core_activity_changelist' %}" class="btn btn-primary" target="_blank">Manage Activities</a>
+                                <a href="/admin/core/activity/" class="btn btn-primary" target="_blank">Manage Activities</a>
                             </div>
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">Health Metrics</h5>
                                 <p class="card-text">View and manage health metrics data.</p>
-                                <a href="{% url 'admin:core_healthmetrics_changelist' %}" class="btn btn-primary" target="_blank">Manage Metrics</a>
+                                <a href="/admin/core/healthmetrics/" class="btn btn-primary" target="_blank">Manage Metrics</a>
                             </div>
                         </div>
                     </div>
@@ -56,7 +56,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">Integrations</h5>
                                 <p class="card-text">Manage service integrations.</p>
-                                <a href="{% url 'admin:integrations_userintegration_changelist' %}" class="btn btn-primary" target="_blank">Manage Integrations</a>
+                                <a href="/admin/integrations/userintegration/" class="btn btn-primary" target="_blank">Manage Integrations</a>
                             </div>
                         </div>
                     </div>
