@@ -81,6 +81,8 @@
                                     <th>Duration</th>
                                     <th>Distance</th>
                                     <th>Pace</th>
+                                    <th>Heart Rate</th>
+                                    <th>Cadence</th>
                                     <th>View</th>
                                 </tr>
                             </thead>
@@ -92,6 +94,8 @@
                                     <td>{{ activity.duration|duration }}</td>
                                     <td>{% if activity.distance %}{{ activity.distance|multiply:conversion_factor|floatformat:1 }} {{ distance_unit }}{% endif %}</td>
                                     <td>{% if activity.distance and activity.duration %}{% calculate_pace activity.duration activity.distance conversion_factor %} /{{ distance_unit }}{% endif %}</td>
+                                    <td>{% if activity.average_heart_rate %}{{ activity.average_heart_rate }} bpm{% endif %}</td>
+                                    <td>{% if activity.average_cadence %}{{ activity.average_cadence }} spm{% endif %}</td>
                                     <td>
                                         {% if activity.source == 'strava' %}
                                         <a href="https://www.strava.com/activities/{{ activity.external_id }}" target="_blank" class="btn btn-sm btn-outline-secondary">
