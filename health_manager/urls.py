@@ -9,7 +9,7 @@ from users.views import RegisterView, settings, delete_user, CustomPasswordChang
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
     connect_strava, complete_strava,
-    connect_whoop
+    connect_whoop, full_resync_strava
 )
 
 urlpatterns = [
@@ -43,6 +43,7 @@ urlpatterns = [
     
     # Other URLs
     path('sync/strava/', sync_strava, name='sync_strava'),
+    path('sync/strava/full/', full_resync_strava, name='full_resync_strava'),
     path('sync/whoop/', sync_whoop, name='sync_whoop'),
     path('webhooks/whoop/', whoop_webhook, name='whoop_webhook'),
 ] 

@@ -18,6 +18,7 @@ from datetime import datetime, timezone, timedelta
 import secrets
 import string
 import os
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -52,18 +53,17 @@ def sync_whoop(request):
 
 @login_required
 def connect_strava(request):
-    """Custom view to handle Strava authentication"""
-    try:
-        # Check if already connected
-        if UserIntegration.objects.filter(user=request.user, provider='strava').exists():
-            return redirect('settings')
-        
-        # Redirect to Strava OAuth
-        auth_url = f"https://www.strava.com/oauth/authorize?client_id={settings.SOCIAL_AUTH_STRAVA_KEY}&redirect_uri={request.build_absolute_uri('/complete_strava/')}&response_type=code&scope=read,activity:read_all&approval_prompt=force"
-        return redirect(auth_url)
-    except Exception as e:
-        logger.error(f"Error connecting to Strava: {str(e)}")
-        return render(request, 'error.html', {'error': str(e)})
+    client_id = settings.SOCIAL_AUTH_STRAVA_KEY
+    redirect_uri = request.build_absolute_uri('/complete/strava/')
+    
+    # Define the desired scope
+    scope = 'read,activity:read_all'
+    
+    # Construct the authorization URL
+    auth_url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&scope={scope}"
+    
+    # Redirect the user to the Strava authorization page
+    return redirect(auth_url)
 
 @login_required
 def complete_strava(request):
@@ -312,4 +312,21 @@ def whoop_webhook(request):
     except Exception as e:
         logger.error(f"Error processing Whoop webhook: {str(e)}")
         logger.exception("Exception details:")
-        return HttpResponse("Internal server error", status=500) 
+        return HttpResponse("Internal server error", status=500)
+
+@login_required
+def full_resync_strava(request):
+    try:
+        # Run the management command in the background
+        subprocess.Popen(['python', 'manage.py', 'resync_strava_activities'])
+        
+        # Show a message to the user that the resync has been triggered
+        return render(request, 'info.html', {
+            'title': 'Full Resync Started',
+            'message': 'A full resync of all your Strava activities has been started. This process may take a few minutes. The heart rate and cadence data will be updated as it becomes available.',
+            'redirect_url': '/strava/',
+            'redirect_text': 'Return to Strava Activities'
+        })
+    except Exception as e:
+        logger.error(f"Error triggering full Strava resync: {str(e)}")
+        return render(request, 'error.html', {'error': str(e)}) 

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Health Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>{{ title }}</h2>
+            </div>
+            <div class="card-body">
+                <p>{{ message }}</p>
+                {% if redirect_url %}
+                <div class="mt-4">
+                    <a href="{{ redirect_url }}" class="btn btn-primary">{{ redirect_text|default:"Continue" }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

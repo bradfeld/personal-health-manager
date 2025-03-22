@@ -32,6 +32,7 @@
                             <small class="text-muted me-2">Last sync: <span class="local-datetime" data-datetime="{{ last_sync|localize_datetime }}"></span></small>
                             {% endif %}
                             <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
+                            <a href="{% url 'full_resync_strava' %}" class="btn btn-outline-primary ms-2" title="Resync all activities with heart rate and cadence data">Full Resync</a>
                         </div>
                     </div>
                 </div>
@@ -145,6 +146,7 @@
                         <small class="text-muted me-2">Last sync: <span class="local-datetime" data-datetime="{{ last_sync|localize_datetime }}"></span></small>
                         {% endif %}
                         <a href="{% url 'sync_strava' %}" class="btn btn-primary">Sync</a>
+                        <a href="{% url 'full_resync_strava' %}" class="btn btn-outline-primary ms-2" title="Resync all activities with heart rate and cadence data">Full Resync</a>
                     </div>
                 </div>
             </div>
