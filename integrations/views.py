@@ -1,24 +1,17 @@
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-from django.contrib import messages
+from django.http import HttpResponse
+from django.conf import settings
+from django.utils import timezone
+from datetime import datetime, timedelta
+import requests
+import json
+import logging
+from .models import UserIntegration
 from .services.strava import StravaService
 from .services.whoop import WhoopService
-from .models import UserIntegration
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-import json
-import hmac
-import hashlib
-from django.conf import settings
-import logging
-from social_django.utils import psa
-import requests
-from datetime import datetime, timezone, timedelta
-import secrets
-import string
-import os
-import subprocess
+from django.core.management import call_command
+from threading import Thread
 
 logger = logging.getLogger(__name__)
 
@@ -317,8 +310,25 @@ def whoop_webhook(request):
 @login_required
 def full_resync_strava(request):
     try:
-        # Run the management command in the background
-        subprocess.Popen(['python', 'manage.py', 'resync_strava_activities'])
+        # Instead of using subprocess, directly call the resync functionality
+        from django.core.management import call_command
+        from threading import Thread
+        
+        # Set up a background thread to run the command
+        def run_resync():
+            try:
+                # Call the command with the current user only
+                logger.info(f"Starting background resync for user {request.user.username}")
+                call_command('resync_strava_activities', user=request.user.username)
+                logger.info(f"Completed background resync for user {request.user.username}")
+            except Exception as e:
+                logger.error(f"Error in background resync thread: {str(e)}", exc_info=True)
+        
+        # Start the thread
+        thread = Thread(target=run_resync)
+        thread.daemon = True  # This ensures the thread won't block server shutdown
+        thread.start()
+        logger.info(f"Background resync thread started for user {request.user.username}")
         
         # Show a message to the user that the resync has been triggered
         return render(request, 'info.html', {
@@ -328,5 +338,67 @@ def full_resync_strava(request):
             'redirect_text': 'Return to Strava Activities'
         })
     except Exception as e:
-        logger.error(f"Error triggering full Strava resync: {str(e)}")
+        logger.error(f"Error triggering full Strava resync: {str(e)}", exc_info=True)
+        return render(request, 'error.html', {'error': str(e)})
+
+@login_required
+def direct_sync_strava(request):
+    """
+    Direct sync view that doesn't use a background thread - useful for testing and debugging
+    This will resync the most recent 30 days of activities and show results directly.
+    """
+    try:
+        # Get the user's integration
+        integration = UserIntegration.objects.get(user=request.user, provider='strava')
+        
+        # Create service
+        service = StravaService(request.user)
+        
+        # Store current last_sync
+        old_last_sync = integration.last_sync
+        
+        # Set last_sync to 30 days ago to get recent activities
+        days_to_sync = 30
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_sync)
+        integration.last_sync = cutoff_date
+        integration.save()
+        
+        # Run the sync
+        results = service.sync_activities()
+        
+        # Restore original last_sync
+        integration.last_sync = old_last_sync
+        integration.save()
+        
+        # Check heart rate and cadence data
+        total = results['total']
+        heart_rate = results['heart_rate']
+        cadence = results['cadence']
+        
+        hr_percentage = (heart_rate / total * 100) if total > 0 else 0
+        cadence_percentage = (cadence / total * 100) if total > 0 else 0
+        
+        # Prepare detailed response
+        message = f"""
+        Synced {total} activities from the last {days_to_sync} days.
+        
+        Heart rate data available for {heart_rate} activities ({hr_percentage:.1f}%).
+        Cadence data available for {cadence} activities ({cadence_percentage:.1f}%).
+        
+        This sync was done directly and should show results immediately.
+        If you still don't see heart rate or cadence data, check the Strava API documentation
+        to see if this data is available for your activities and devices.
+        """
+        
+        return render(request, 'info.html', {
+            'title': 'Direct Strava Sync Results',
+            'message': message,
+            'redirect_url': '/strava/',
+            'redirect_text': 'Return to Strava Activities'
+        })
+        
+    except UserIntegration.DoesNotExist:
+        return redirect('settings')
+    except Exception as e:
+        logger.error(f"Error in direct Strava sync: {str(e)}", exc_info=True)
         return render(request, 'error.html', {'error': str(e)}) 
