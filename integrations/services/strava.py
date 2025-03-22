@@ -74,6 +74,8 @@ class StravaService:
                     'duration': timedelta(seconds=activity_data['moving_time']),
                     'distance': activity_data['distance'] / 1000,
                     'calories': activity_data.get('calories'),
+                    'average_heart_rate': activity_data.get('average_heartrate'),
+                    'average_cadence': activity_data.get('average_cadence'),
                 }
             )
         

@@ -8,6 +8,8 @@ class Activity(models.Model):
     duration = models.DurationField()
     distance = models.FloatField(null=True, blank=True)
     calories = models.IntegerField(null=True, blank=True)
+    average_heart_rate = models.IntegerField(null=True, blank=True)
+    average_cadence = models.IntegerField(null=True, blank=True)
     source = models.CharField(max_length=20)  # 'strava' or 'whoop'
     external_id = models.CharField(max_length=100)
     

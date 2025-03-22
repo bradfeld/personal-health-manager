@@ -32,6 +32,23 @@
                     </div>
                 </div>
                 {% endif %}
+
+                {% if activity.average_heart_rate or activity.average_cadence %}
+                <div class="row mt-4">
+                    {% if activity.average_heart_rate %}
+                    <div class="col-md-6">
+                        <h4>Average Heart Rate</h4>
+                        <p>{{ activity.average_heart_rate }} bpm</p>
+                    </div>
+                    {% endif %}
+                    {% if activity.average_cadence %}
+                    <div class="col-md-6">
+                        <h4>Average Cadence</h4>
+                        <p>{{ activity.average_cadence }} spm</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
                 
                 <div class="row mt-4">
                     <div class="col-md-6">
