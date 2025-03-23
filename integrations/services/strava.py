@@ -106,12 +106,8 @@ class StravaService:
                 if detailed_response.status_code == 200:
                     try:
                         detailed_data = detailed_response.json()
-                        # Log detailed response for debugging (truncate if too large)
-                        detailed_json = json.dumps(detailed_data)
-                        if len(detailed_json) > 500:
-                            logger.info(f"Detailed activity data for {activity_id} (truncated): {detailed_json[:500]}...")
-                        else:
-                            logger.info(f"Detailed activity data for {activity_id}: {detailed_json}")
+                        # Log the keys in detailed data for debugging
+                        logger.info(f"Detailed activity data keys for {activity_id}: {list(detailed_data.keys())}")
                         
                         # Merge the detailed data with the basic data, with detailed data taking precedence
                         activity_data.update(detailed_data)
@@ -120,60 +116,57 @@ class StravaService:
                 else:
                     logger.warning(f"Failed to get detailed data for activity {activity_id}. Status: {detailed_response.status_code}, Response: {detailed_response.text[:200]}")
                 
-                # Extract heart rate and cadence from the data
-                heart_rate = activity_data.get('average_heartrate')
-                if heart_rate is None:
-                    # Try alternative field names
-                    heart_rate = activity_data.get('average_heart_rate')
-                    
-                    # Log all keys that might be related to heart rate
-                    hr_related_keys = [k for k in activity_data.keys() if 'heart' in k.lower()]
-                    if hr_related_keys:
-                        logger.info(f"Found heart rate related keys: {hr_related_keys}")
-                        for key in hr_related_keys:
-                            logger.info(f"Value for {key}: {activity_data.get(key)}")
-                    
-                    if heart_rate is None and ('heartrate' in str(activity_data) or 'heart_rate' in str(activity_data)):
-                        logger.warning(f"Heart rate data might be available with a different field name. Activity keys: {list(activity_data.keys())}")
+                # Log all keys that might be related to heart rate and cadence
+                for key in activity_data.keys():
+                    if 'heart' in key.lower() or 'cadence' in key.lower():
+                        logger.info(f"Found metric key: {key}, value: {activity_data.get(key)}")
                 
-                cadence = activity_data.get('average_cadence')
-                # Log all keys that might be related to cadence
-                cadence_related_keys = [k for k in activity_data.keys() if 'cadence' in k.lower()]
-                if cadence_related_keys:
-                    logger.info(f"Found cadence related keys: {cadence_related_keys}")
-                    for key in cadence_related_keys:
-                        logger.info(f"Value for {key}: {activity_data.get(key)}")
-                        
-                if cadence is None and 'cadence' in str(activity_data):
-                    logger.warning(f"Cadence data might be available with a different field name. Activity keys: {list(activity_data.keys())}")
+                # Extract heart rate - check for 'average_heartrate' (Strava API format)
+                heart_rate = None
+                if 'average_heartrate' in activity_data and activity_data['average_heartrate'] is not None:
+                    heart_rate = activity_data['average_heartrate']
+                    logger.info(f"Found heart rate from 'average_heartrate': {heart_rate}")
+                elif 'has_heartrate' in activity_data and activity_data['has_heartrate']:
+                    logger.warning(f"Activity {activity_id} has heart rate data but 'average_heartrate' is missing")
                 
-                # Log what we found
-                logger.info(f"Activity {activity_id} heart rate: {heart_rate}, cadence: {cadence}")
+                # Extract cadence
+                cadence = None
+                if 'average_cadence' in activity_data and activity_data['average_cadence'] is not None:
+                    cadence = activity_data['average_cadence']
+                    logger.info(f"Found cadence from 'average_cadence': {cadence}")
                 
-                # Add device info if available
-                device_name = None
-                if 'device_name' in activity_data:
-                    device_name = activity_data.get('device_name')
-                    logger.info(f"Activity {activity_id} recorded with device: {device_name}")
+                # Log the final values we're using
+                logger.info(f"Activity {activity_id} final values - heart rate: {heart_rate}, cadence: {cadence}")
                 
                 # Update the activity in our database
                 # Parse the datetime and make it timezone-aware
                 start_date = datetime.strptime(activity_data['start_date'], '%Y-%m-%dT%H:%M:%SZ')
                 start_date_aware = timezone.make_aware(start_date)
                 
+                # Prepare defaults dict with non-null values only
+                defaults = {
+                    'date': start_date_aware,
+                    'activity_type': activity_data['type'],
+                    'duration': timedelta(seconds=activity_data['moving_time']),
+                    'distance': activity_data['distance'] / 1000,
+                    'source': 'strava'
+                }
+                
+                # Add optional fields only if they have values
+                if 'calories' in activity_data and activity_data['calories'] is not None:
+                    defaults['calories'] = activity_data['calories']
+                
+                if heart_rate is not None:
+                    defaults['average_heart_rate'] = heart_rate
+                
+                if cadence is not None:
+                    defaults['average_cadence'] = cadence
+                
                 activity, created = Activity.objects.update_or_create(
                     user=self.user,
                     source='strava',
                     external_id=str(activity_id),
-                    defaults={
-                        'date': start_date_aware,
-                        'activity_type': activity_data['type'],
-                        'duration': timedelta(seconds=activity_data['moving_time']),
-                        'distance': activity_data['distance'] / 1000,
-                        'calories': activity_data.get('calories'),
-                        'average_heart_rate': heart_rate,
-                        'average_cadence': cadence,
-                    }
+                    defaults=defaults
                 )
                 
                 activities_updated += 1
@@ -189,6 +182,8 @@ class StravaService:
                 
             except Exception as e:
                 logger.error(f"Error processing activity {activity_data.get('id', 'unknown')}: {str(e)}")
+                import traceback
+                logger.error(traceback.format_exc())
         
         logger.info(f"Sync completed. Updated {activities_updated} activities. Heart rate data for {activities_with_hr}, cadence data for {activities_with_cadence}")
         
