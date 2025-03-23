@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 import requests
 import json
 import logging
-from .models import UserIntegration, Activity
+from .models import UserIntegration
+from core.models import Activity
 from .services.strava import StravaService
 from .services.whoop import WhoopService
 from django.core.management import call_command
