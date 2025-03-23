@@ -12,6 +12,11 @@ from .services.strava import StravaService
 from .services.whoop import WhoopService
 from django.core.management import call_command
 from threading import Thread
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import secrets
+import string
+import os
 
 logger = logging.getLogger(__name__)
 
