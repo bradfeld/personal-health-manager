@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 import logging
-from .models import UserIntegration
+from .models import UserIntegration, Activity
 from .services.strava import StravaService
 from .services.whoop import WhoopService
 from django.core.management import call_command
@@ -525,4 +525,216 @@ def strava_diagnostic(request):
         return redirect('settings')
     except Exception as e:
         logger.error(f"Error in Strava diagnostic view: {str(e)}", exc_info=True)
+        return render(request, 'error.html', {'error': str(e)})
+
+@login_required
+def strava_debug(request):
+    """
+    Debug view to directly test Strava API connectivity and permissions
+    """
+    try:
+        # Get the user's integration
+        integration = UserIntegration.objects.get(user=request.user, provider='strava')
+        
+        # Check if token is valid
+        if integration.token_expires_at <= timezone.now():
+            return render(request, 'info.html', {
+                'title': 'Strava Debug - Token Expired',
+                'message': f"Your Strava access token has expired. Last valid until: {integration.token_expires_at}",
+                'redirect_url': '/strava/',
+                'redirect_text': 'Back to Strava Activities'
+            })
+        
+        # Define headers with access token
+        headers = {
+            'Authorization': f'Bearer {integration.access_token}'
+        }
+        
+        # Test different API endpoints
+        results = []
+        
+        # 1. Test athlete profile
+        athlete_url = 'https://www.strava.com/api/v3/athlete'
+        logger.info(f"Testing Strava API: {athlete_url}")
+        athlete_response = requests.get(athlete_url, headers=headers)
+        athlete_result = {
+            'endpoint': 'Athlete Profile',
+            'url': athlete_url,
+            'status_code': athlete_response.status_code,
+            'success': athlete_response.status_code == 200
+        }
+        
+        if athlete_response.status_code == 200:
+            athlete_data = athlete_response.json()
+            athlete_result['data'] = {
+                'id': athlete_data.get('id'),
+                'username': athlete_data.get('username'),
+                'firstname': athlete_data.get('firstname'),
+                'lastname': athlete_data.get('lastname')
+            }
+        else:
+            athlete_result['error'] = athlete_response.text[:200]
+        
+        results.append(athlete_result)
+        
+        # 2. Test athlete activities with different time ranges
+        activities_url = 'https://www.strava.com/api/v3/athlete/activities'
+        
+        # Last 7 days
+        week_ago = int((timezone.now() - timedelta(days=7)).timestamp())
+        params_week = {'after': week_ago, 'per_page': 100}
+        logger.info(f"Testing Strava API: {activities_url} with params {params_week}")
+        week_response = requests.get(activities_url, headers=headers, params=params_week)
+        
+        week_result = {
+            'endpoint': 'Activities (Last 7 days)',
+            'url': activities_url,
+            'params': params_week,
+            'status_code': week_response.status_code,
+            'success': week_response.status_code == 200
+        }
+        
+        if week_response.status_code == 200:
+            activities = week_response.json()
+            week_result['count'] = len(activities)
+            if activities:
+                week_result['sample'] = {
+                    'id': activities[0].get('id'),
+                    'name': activities[0].get('name'),
+                    'type': activities[0].get('type'),
+                    'start_date': activities[0].get('start_date'),
+                    'has_heartrate': 'average_heartrate' in activities[0] or 'average_heart_rate' in activities[0],
+                    'has_cadence': 'average_cadence' in activities[0]
+                }
+        else:
+            week_result['error'] = week_response.text[:200]
+            
+        results.append(week_result)
+        
+        # Last 90 days
+        ninety_days_ago = int((timezone.now() - timedelta(days=90)).timestamp())
+        params_ninety = {'after': ninety_days_ago, 'per_page': 100}
+        logger.info(f"Testing Strava API: {activities_url} with params {params_ninety}")
+        ninety_response = requests.get(activities_url, headers=headers, params=params_ninety)
+        
+        ninety_result = {
+            'endpoint': 'Activities (Last 90 days)',
+            'url': activities_url,
+            'params': params_ninety,
+            'status_code': ninety_response.status_code,
+            'success': ninety_response.status_code == 200
+        }
+        
+        if ninety_response.status_code == 200:
+            activities = ninety_response.json()
+            ninety_result['count'] = len(activities)
+            if activities:
+                ninety_result['sample'] = {
+                    'id': activities[0].get('id'),
+                    'name': activities[0].get('name'),
+                    'type': activities[0].get('type'),
+                    'start_date': activities[0].get('start_date')
+                }
+        else:
+            ninety_result['error'] = ninety_response.text[:200]
+            
+        results.append(ninety_result)
+        
+        # All time (no after param)
+        params_all = {'per_page': 100}
+        logger.info(f"Testing Strava API: {activities_url} with params {params_all}")
+        all_response = requests.get(activities_url, headers=headers, params=params_all)
+        
+        all_result = {
+            'endpoint': 'Activities (All time)',
+            'url': activities_url,
+            'params': params_all,
+            'status_code': all_response.status_code,
+            'success': all_response.status_code == 200
+        }
+        
+        if all_response.status_code == 200:
+            activities = all_response.json()
+            all_result['count'] = len(activities)
+            if activities:
+                all_result['sample'] = {
+                    'id': activities[0].get('id'),
+                    'name': activities[0].get('name'),
+                    'type': activities[0].get('type'),
+                    'start_date': activities[0].get('start_date')
+                }
+        else:
+            all_result['error'] = all_response.text[:200]
+            
+        results.append(all_result)
+        
+        # 3. Check our database records
+        db_activities = Activity.objects.filter(
+            user=request.user,
+            source='strava'
+        ).count()
+        
+        db_activities_with_hr = Activity.objects.filter(
+            user=request.user,
+            source='strava',
+            average_heart_rate__isnull=False
+        ).count()
+        
+        db_activities_with_cadence = Activity.objects.filter(
+            user=request.user,
+            source='strava',
+            average_cadence__isnull=False
+        ).count()
+        
+        # Prepare results message
+        message = f"""
+        # Strava API Diagnostic Results
+        
+        ## OAuth Status
+        - Token Valid Until: {integration.token_expires_at}
+        - Current Time: {timezone.now()}
+        
+        ## Database Status
+        - Total Strava Activities: {db_activities}
+        - Activities with Heart Rate: {db_activities_with_hr}
+        - Activities with Cadence: {db_activities_with_cadence}
+        
+        ## API Test Results
+        """
+        
+        for result in results:
+            message += f"\n### {result['endpoint']}\n"
+            message += f"- Status: {'✅ Success' if result['success'] else '❌ Failed'} ({result['status_code']})\n"
+            
+            if 'count' in result:
+                message += f"- Activities Found: {result['count']}\n"
+                
+            if 'sample' in result:
+                message += f"- Sample Activity: {result['sample']}\n"
+                
+            if 'error' in result:
+                message += f"- Error: {result['error']}\n"
+        
+        message += """
+        ## What Next?
+        
+        If all API tests are successful but 0 activities are returned, check:
+        1. Do you have any activities in your Strava account?
+        2. Have you granted the necessary permissions during OAuth?
+        3. Are your activities private? (This shouldn't matter but good to check)
+        
+        You can try reconnecting your Strava account to refresh permissions.
+        """
+        
+        return render(request, 'info.html', {
+            'title': 'Strava API Diagnostic Results',
+            'message': message,
+            'redirect_url': '/strava/',
+            'redirect_text': 'Back to Strava Activities'
+        })
+        
+    except UserIntegration.DoesNotExist:
+        return redirect('settings')
+    except Exception as e:
+        logger.error(f"Error in Strava debug view: {str(e)}", exc_info=True)
         return render(request, 'error.html', {'error': str(e)}) 

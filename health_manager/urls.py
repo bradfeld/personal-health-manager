@@ -9,7 +9,7 @@ from users.views import RegisterView, settings, delete_user, CustomPasswordChang
 from integrations.views import (
     sync_strava, sync_whoop, whoop_webhook, 
     connect_strava, complete_strava,
-    connect_whoop, full_resync_strava, direct_sync_strava, strava_diagnostic
+    connect_whoop, full_resync_strava, direct_sync_strava, strava_debug
 )
 
 urlpatterns = [
@@ -47,5 +47,5 @@ urlpatterns = [
     path('sync/whoop/', sync_whoop, name='sync_whoop'),
     path('webhooks/whoop/', whoop_webhook, name='whoop_webhook'),
     path('sync/strava/direct/', direct_sync_strava, name='direct_sync_strava'),
-    path('strava_diagnostic/', strava_diagnostic, name='strava_diagnostic'),
+    path('strava_debug/', strava_debug, name='strava_debug'),
 ] 
