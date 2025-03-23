@@ -362,11 +362,12 @@ def direct_sync_strava(request):
         # Store current last_sync
         old_last_sync = integration.last_sync
         
-        # Set last_sync to 30 days ago to get recent activities
-        days_to_sync = 30
-        cutoff_date = timezone.now() - timedelta(days=days_to_sync)
-        integration.last_sync = cutoff_date
+        # Set last_sync to None to get all activities (not just new ones)
+        integration.last_sync = None
         integration.save()
+        
+        # Log what we're doing
+        logger.info(f"Running direct sync for user {request.user.username} with no timestamp filter")
         
         # Run the sync
         results = service.sync_activities()
@@ -385,7 +386,7 @@ def direct_sync_strava(request):
         
         # Prepare detailed response
         message = f"""
-        Synced {total} activities from the last {days_to_sync} days.
+        Synced {total} activities from your Strava account.
         
         Heart rate data available for {heart_rate} activities ({hr_percentage:.1f}%).
         Cadence data available for {cadence} activities ({cadence_percentage:.1f}%).

@@ -58,18 +58,26 @@ class StravaService:
         
         # Get activities after last sync
         after_timestamp = int(self.integration.last_sync.timestamp()) if self.integration.last_sync else None
-        logger.info(f"Syncing activities after timestamp: {after_timestamp}")
+        logger.info(f"Syncing activities after timestamp: {after_timestamp}, last_sync: {self.integration.last_sync}")
         
         params = {
             'after': after_timestamp,
             'per_page': 100
         }
         
+        logger.info(f"Making request to {self.BASE_URL}/athlete/activities with params: {params}")
         response = requests.get(f'{self.BASE_URL}/athlete/activities', headers=headers, params=params)
         if response.status_code != 200:
             error_msg = f"Failed to get activities from Strava. Status: {response.status_code}, Response: {response.text}"
             logger.error(error_msg)
             raise Exception(error_msg)
+        
+        # Log the raw response for debugging
+        try:
+            response_text = response.text
+            logger.info(f"Raw response from Strava (first 500 chars): {response_text[:500]}")
+        except Exception as e:
+            logger.error(f"Error logging raw response: {str(e)}")
             
         activities = response.json()
         logger.info(f"Found {len(activities)} activities to sync")
@@ -89,34 +97,55 @@ class StravaService:
                 logger.info(f"Processing activity: {activity_id} - {activity_name} ({activity_type}) on {activity_date}")
                 
                 # Get detailed activity data to access heart rate and cadence
-                detailed_response = requests.get(f'{self.BASE_URL}/activities/{activity_id}', headers=headers)
+                logger.info(f"Getting detailed data for activity: {activity_id}")
+                detailed_url = f"{self.BASE_URL}/activities/{activity_id}"
+                logger.info(f"Making request to {detailed_url}")
+                detailed_response = requests.get(detailed_url, headers=headers)
                 
                 detailed_data = {}
                 if detailed_response.status_code == 200:
-                    detailed_data = detailed_response.json()
-                    # Log detailed response for debugging (truncate if too large)
-                    detailed_json = json.dumps(detailed_data)
-                    if len(detailed_json) > 500:
-                        logger.info(f"Detailed activity data for {activity_id} (truncated): {detailed_json[:500]}...")
-                    else:
-                        logger.info(f"Detailed activity data for {activity_id}: {detailed_json}")
-                    
-                    # Merge the detailed data with the basic data, with detailed data taking precedence
-                    activity_data.update(detailed_data)
+                    try:
+                        detailed_data = detailed_response.json()
+                        # Log detailed response for debugging (truncate if too large)
+                        detailed_json = json.dumps(detailed_data)
+                        if len(detailed_json) > 500:
+                            logger.info(f"Detailed activity data for {activity_id} (truncated): {detailed_json[:500]}...")
+                        else:
+                            logger.info(f"Detailed activity data for {activity_id}: {detailed_json}")
+                        
+                        # Merge the detailed data with the basic data, with detailed data taking precedence
+                        activity_data.update(detailed_data)
+                    except Exception as e:
+                        logger.error(f"Error parsing detailed activity data: {str(e)}, raw response: {detailed_response.text[:200]}")
                 else:
-                    logger.warning(f"Failed to get detailed data for activity {activity_id}. Status: {detailed_response.status_code}, Response: {detailed_response.text}")
+                    logger.warning(f"Failed to get detailed data for activity {activity_id}. Status: {detailed_response.status_code}, Response: {detailed_response.text[:200]}")
                 
                 # Extract heart rate and cadence from the data
                 heart_rate = activity_data.get('average_heartrate')
                 if heart_rate is None:
                     # Try alternative field names
                     heart_rate = activity_data.get('average_heart_rate')
-                    if heart_rate is None and 'heartrate' in str(activity_data):
-                        logger.warning(f"Heart rate data might be available with a different field name: {str(activity_data)[:200]}")
+                    
+                    # Log all keys that might be related to heart rate
+                    hr_related_keys = [k for k in activity_data.keys() if 'heart' in k.lower()]
+                    if hr_related_keys:
+                        logger.info(f"Found heart rate related keys: {hr_related_keys}")
+                        for key in hr_related_keys:
+                            logger.info(f"Value for {key}: {activity_data.get(key)}")
+                    
+                    if heart_rate is None and ('heartrate' in str(activity_data) or 'heart_rate' in str(activity_data)):
+                        logger.warning(f"Heart rate data might be available with a different field name. Activity keys: {list(activity_data.keys())}")
                 
                 cadence = activity_data.get('average_cadence')
+                # Log all keys that might be related to cadence
+                cadence_related_keys = [k for k in activity_data.keys() if 'cadence' in k.lower()]
+                if cadence_related_keys:
+                    logger.info(f"Found cadence related keys: {cadence_related_keys}")
+                    for key in cadence_related_keys:
+                        logger.info(f"Value for {key}: {activity_data.get(key)}")
+                        
                 if cadence is None and 'cadence' in str(activity_data):
-                    logger.warning(f"Cadence data might be available with a different field name: {str(activity_data)[:200]}")
+                    logger.warning(f"Cadence data might be available with a different field name. Activity keys: {list(activity_data.keys())}")
                 
                 # Log what we found
                 logger.info(f"Activity {activity_id} heart rate: {heart_rate}, cadence: {cadence}")
