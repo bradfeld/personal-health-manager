@@ -356,6 +356,36 @@ def direct_sync_strava(request):
         # Get the user's integration
         integration = UserIntegration.objects.get(user=request.user, provider='strava')
         
+        # First, check if we can directly get activities from the API
+        headers = {
+            'Authorization': f'Bearer {integration.access_token}'
+        }
+        
+        # Make a direct API call to /athlete/activities with no filters
+        logger.info("Making direct API call to check for Strava activities")
+        activities_response = requests.get(
+            'https://www.strava.com/api/v3/athlete/activities', 
+            headers=headers,
+            params={"per_page": 10}  # Get a few recent activities
+        )
+        
+        api_check_results = ""
+        if activities_response.status_code == 200:
+            activities = activities_response.json()
+            api_check_results = f"<p>Direct API call found {len(activities)} activities.</p>"
+            if activities:
+                api_check_results += "<p>Most recent activities:</p><ul>"
+                for act in activities[:3]:  # Show first 3
+                    name = act.get('name', 'Unnamed')
+                    date = act.get('start_date', 'Unknown date')
+                    type = act.get('type', 'Unknown type')
+                    has_hr = 'Yes' if act.get('average_heartrate') else 'No'
+                    has_cadence = 'Yes' if act.get('average_cadence') else 'No'
+                    api_check_results += f"<li>{name} ({type}) on {date} - Has heart rate: {has_hr}, Has cadence: {has_cadence}</li>"
+                api_check_results += "</ul>"
+        else:
+            api_check_results = f"<p>Direct API call failed with status {activities_response.status_code}: {activities_response.text}</p>"
+        
         # Create service
         service = StravaService(request.user)
         
@@ -386,14 +416,19 @@ def direct_sync_strava(request):
         
         # Prepare detailed response
         message = f"""
-        Synced {total} activities from your Strava account.
+        <h3>Sync Results</h3>
+        <p>Synced {total} activities from your Strava account.</p>
+        <p>Heart rate data available for {heart_rate} activities ({hr_percentage:.1f}%).</p>
+        <p>Cadence data available for {cadence} activities ({cadence_percentage:.1f}%).</p>
         
-        Heart rate data available for {heart_rate} activities ({hr_percentage:.1f}%).
-        Cadence data available for {cadence} activities ({cadence_percentage:.1f}%).
+        <h3>Direct API Check</h3>
+        {api_check_results}
         
-        This sync was done directly and should show results immediately.
-        If you still don't see heart rate or cadence data, check the Strava API documentation
-        to see if this data is available for your activities and devices.
+        <h3>About the Data</h3>
+        <p>This sync was done directly and should show results immediately.</p>
+        <p>If you still don't see heart rate or cadence data, your Strava activities may not contain this information.</p>
+        <p>Heart rate data requires a heart rate monitor connected to your device during the activity.</p>
+        <p>Cadence data is typically only available for running and cycling activities with appropriate sensors.</p>
         """
         
         return render(request, 'info.html', {
@@ -407,4 +442,87 @@ def direct_sync_strava(request):
         return redirect('settings')
     except Exception as e:
         logger.error(f"Error in direct Strava sync: {str(e)}", exc_info=True)
+        return render(request, 'error.html', {'error': str(e)})
+
+@login_required
+def strava_diagnostic(request):
+    """Diagnostic view to check Strava API connection and permissions"""
+    try:
+        # Get the user's integration
+        integration = UserIntegration.objects.get(user=request.user, provider='strava')
+        
+        # Step 1: Check token details
+        token_status = {
+            "access_token_exists": bool(integration.access_token),
+            "refresh_token_exists": bool(integration.refresh_token),
+            "token_expires_at": integration.token_expires_at,
+            "token_expired": integration.token_expires_at <= timezone.now() if integration.token_expires_at else True,
+            "last_sync": integration.last_sync
+        }
+        
+        # Step 2: Try to refresh the token (will log issues if they occur)
+        try:
+            service = StravaService(request.user)
+            service.refresh_token_if_needed()
+            token_refresh_result = "Success" 
+        except Exception as e:
+            token_refresh_result = f"Failed: {str(e)}"
+        
+        # Step 3: Make a direct API call to /athlete to check basic access
+        headers = {
+            'Authorization': f'Bearer {integration.access_token}'
+        }
+        athlete_response = requests.get('https://www.strava.com/api/v3/athlete', headers=headers)
+        
+        athlete_result = {
+            "status_code": athlete_response.status_code,
+            "response": athlete_response.json() if athlete_response.status_code == 200 else athlete_response.text
+        }
+        
+        # Step 4: Make a direct API call to /athlete/activities with no filters
+        activities_response = requests.get(
+            'https://www.strava.com/api/v3/athlete/activities', 
+            headers=headers,
+            params={"per_page": 5}  # Just get a few to check
+        )
+        
+        if activities_response.status_code == 200:
+            activities = activities_response.json()
+            activities_result = {
+                "status_code": activities_response.status_code,
+                "count": len(activities),
+                "first_few": activities[:3] if activities else []
+            }
+        else:
+            activities_result = {
+                "status_code": activities_response.status_code,
+                "response": activities_response.text
+            }
+        
+        # Step 5: Check scopes/permissions
+        scopes = integration.scopes if hasattr(integration, 'scopes') else "Unknown - not stored"
+        
+        # Compile results
+        diagnostic_results = {
+            "token_status": token_status,
+            "token_refresh_result": token_refresh_result,
+            "athlete_result": athlete_result,
+            "activities_result": activities_result,
+            "scopes": scopes
+        }
+        
+        # Format results for display
+        formatted_results = json.dumps(diagnostic_results, indent=2, default=str)
+        
+        return render(request, 'info.html', {
+            'title': 'Strava API Diagnostic Results',
+            'message': f"<pre>{formatted_results}</pre>",
+            'redirect_url': '/strava/',
+            'redirect_text': 'Return to Strava Activities'
+        })
+        
+    except UserIntegration.DoesNotExist:
+        return redirect('settings')
+    except Exception as e:
+        logger.error(f"Error in Strava diagnostic view: {str(e)}", exc_info=True)
         return render(request, 'error.html', {'error': str(e)}) 

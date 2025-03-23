@@ -10,7 +10,7 @@
                 <h2>{{ title }}</h2>
             </div>
             <div class="card-body">
-                <p>{{ message }}</p>
+                <div>{{ message|safe }}</div>
                 {% if redirect_url %}
                 <div class="mt-4">
                     <a href="{{ redirect_url }}" class="btn btn-primary">{{ redirect_text|default:"Continue" }}</a>
