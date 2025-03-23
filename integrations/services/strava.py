@@ -1,8 +1,9 @@
 import requests
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from ..models import UserIntegration
 from core.models import Activity
 from django.conf import settings
+from django.utils import timezone
 import logging
 import json
 
@@ -16,7 +17,7 @@ class StravaService:
         self.integration = UserIntegration.objects.get(user=user, provider='strava')
     
     def refresh_token_if_needed(self):
-        if self.integration.token_expires_at <= datetime.now(timezone.utc):
+        if self.integration.token_expires_at <= timezone.now():
             logger.info("Strava token needs refresh")
             response = requests.post(
                 'https://www.strava.com/oauth/token',
@@ -37,10 +38,9 @@ class StravaService:
                 data = response.json()
                 self.integration.access_token = data['access_token']
                 self.integration.refresh_token = data['refresh_token']
-                self.integration.token_expires_at = datetime.fromtimestamp(
-                    data['expires_at'],
-                    tz=timezone.utc
-                )
+                # Convert from timestamp to timezone-aware datetime
+                expires_at = datetime.fromtimestamp(data['expires_at'])
+                self.integration.token_expires_at = timezone.make_aware(expires_at)
                 self.integration.save()
                 logger.info("Successfully refreshed Strava token")
             except (KeyError, ValueError) as e:
@@ -128,12 +128,16 @@ class StravaService:
                     logger.info(f"Activity {activity_id} recorded with device: {device_name}")
                 
                 # Update the activity in our database
+                # Parse the datetime and make it timezone-aware
+                start_date = datetime.strptime(activity_data['start_date'], '%Y-%m-%dT%H:%M:%SZ')
+                start_date_aware = timezone.make_aware(start_date)
+                
                 activity, created = Activity.objects.update_or_create(
                     user=self.user,
                     source='strava',
                     external_id=str(activity_id),
                     defaults={
-                        'date': datetime.strptime(activity_data['start_date'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc),
+                        'date': start_date_aware,
                         'activity_type': activity_data['type'],
                         'duration': timedelta(seconds=activity_data['moving_time']),
                         'distance': activity_data['distance'] / 1000,
@@ -159,7 +163,7 @@ class StravaService:
         
         logger.info(f"Sync completed. Updated {activities_updated} activities. Heart rate data for {activities_with_hr}, cadence data for {activities_with_cadence}")
         
-        self.integration.last_sync = datetime.now(timezone.utc)
+        self.integration.last_sync = timezone.now()
         self.integration.save()
         
         return {

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from django.utils import timezone
 from .models import UserIntegration
 
 def save_strava_token(backend, user, response, *args, **kwargs):
@@ -25,7 +26,7 @@ def save_whoop_token(backend, user, response, *args, **kwargs):
             defaults={
                 'access_token': response.get('access_token'),
                 'refresh_token': response.get('refresh_token'),
-                'expires_at': timezone.now() + timedelta(seconds=response.get('expires_in', 0)),
+                'token_expires_at': timezone.now() + timedelta(seconds=response.get('expires_in', 0)),
                 'token_type': response.get('token_type', 'Bearer')
             }
         ) 

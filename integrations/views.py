@@ -98,7 +98,7 @@ def complete_strava(request):
             defaults={
                 'access_token': data.get('access_token'),
                 'refresh_token': data.get('refresh_token'),
-                'token_expires_at': datetime.fromtimestamp(data.get('expires_at', 0), tz=timezone.utc)
+                'token_expires_at': timezone.make_aware(datetime.fromtimestamp(data.get('expires_at', 0)))
             }
         )
         
@@ -241,7 +241,7 @@ def complete_whoop(request):
             defaults={
                 'access_token': data.get('access_token'),
                 'refresh_token': data.get('refresh_token'),
-                'token_expires_at': datetime.now(timezone.utc) + timedelta(seconds=data.get('expires_in', 3600)),
+                'token_expires_at': timezone.now() + timedelta(seconds=data.get('expires_in', 3600)),
                 'external_id': user_id
             }
         )
@@ -364,7 +364,7 @@ def direct_sync_strava(request):
         
         # Set last_sync to 30 days ago to get recent activities
         days_to_sync = 30
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_sync)
+        cutoff_date = timezone.now() - timedelta(days=days_to_sync)
         integration.last_sync = cutoff_date
         integration.save()
         

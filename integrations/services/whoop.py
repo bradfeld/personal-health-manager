@@ -1,8 +1,9 @@
 import requests
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from ..models import UserIntegration
 from core.models import HealthMetrics, Activity
 from django.conf import settings
+from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class WhoopService:
     def refresh_token_if_needed(self):
         """Refresh the access token if it's expired or about to expire"""
         # Add a buffer of 5 minutes to avoid edge cases
-        if self.integration.token_expires_at <= datetime.now(timezone.utc) + timedelta(minutes=5):
+        if self.integration.token_expires_at <= timezone.now() + timedelta(minutes=5):
             logger.info(f"Refreshing Whoop token for user {self.user.username}")
             try:
                 response = requests.post(
@@ -39,7 +40,7 @@ class WhoopService:
                     data = response.json()
                     self.integration.access_token = data['access_token']
                     self.integration.refresh_token = data['refresh_token']
-                    self.integration.token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=data['expires_in'])
+                    self.integration.token_expires_at = timezone.now() + timedelta(seconds=data['expires_in'])
                     self.integration.save()
                     logger.info(f"Successfully refreshed Whoop token for user {self.user.username}")
                 except (KeyError, ValueError) as e:
@@ -60,7 +61,7 @@ class WhoopService:
         self.sync_sleep()
         
         # Update last sync time
-        self.integration.last_sync = datetime.now(timezone.utc)
+        self.integration.last_sync = timezone.now()
         self.integration.save()
         logger.info(f"Completed Whoop sync for user {self.user.username}")
     
@@ -76,7 +77,7 @@ class WhoopService:
         logger.info(f"Syncing Whoop workouts for user {self.user.username}")
         try:
             # Get data since last sync or last 30 days
-            start_date = self.integration.last_sync or (datetime.now(timezone.utc) - timedelta(days=30))
+            start_date = self.integration.last_sync or (timezone.now() - timedelta(days=30))
             start_date_str = start_date.isoformat()
             
             logger.info(f"Using start date: {start_date_str}")
@@ -148,7 +149,7 @@ class WhoopService:
         logger.info(f"Syncing Whoop recovery data for user {self.user.username}")
         try:
             # Get data since last sync or last 30 days
-            start_date = self.integration.last_sync or (datetime.now(timezone.utc) - timedelta(days=30))
+            start_date = self.integration.last_sync or (timezone.now() - timedelta(days=30))
             start_date_str = start_date.isoformat()
             
             logger.info(f"Using start date: {start_date_str}")
@@ -219,7 +220,7 @@ class WhoopService:
         logger.info(f"Syncing Whoop sleep data for user {self.user.username}")
         try:
             # Get data since last sync or last 30 days
-            start_date = self.integration.last_sync or (datetime.now(timezone.utc) - timedelta(days=30))
+            start_date = self.integration.last_sync or (timezone.now() - timedelta(days=30))
             start_date_str = start_date.isoformat()
             
             logger.info(f"Using start date: {start_date_str}")
